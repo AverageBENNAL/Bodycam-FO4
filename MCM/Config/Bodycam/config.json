@@ -1,0 +1,3328 @@
+{
+  "modName": "Bodycam",
+  "displayName": "Bodycam",
+  "minMcmVersion": 2,
+  "pluginRequirements": [],
+  "content": [
+    {
+      "text": "<font size=\"24\"><b>Bodycam</b></font> <font size=\"18\">v1.0.6</font>",
+      "type": "text",
+      "html": true
+    },
+    {
+      "text": "Bodycam-style first person: the gun leads and the view catches up, camera and gun lean into turns, and walking, jogging and sprinting each have their own chest-cam bob and stride sway.",
+      "type": "text"
+    },
+    {
+      "text": "Please endorse :)",
+      "type": "text"
+    }
+  ],
+  "pages": [
+    {
+      "pageDisplayName": "General",
+      "content": [
+        {
+          "text": "Bodycam",
+          "type": "section"
+        },
+        {
+          "id": "bEnabled:Main",
+          "text": "Enable Bodycam",
+          "type": "switcher",
+          "help": "<font size=\"15\">Master switch. Turning it off fades all motion out smoothly; turning it on fades back in.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "iPreset:Main",
+          "text": "Intensity Preset",
+          "type": "dropdown",
+          "help": "<font size=\"15\">Scales all motion at once: view lag, camera lean, bob, sway and extra gun lean. Your individual sliders still apply on top.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingInt",
+            "options": [
+              "Subtle (x0.6)",
+              "Default (x1.0)",
+              "Intense (x1.5)"
+            ]
+          }
+        },
+        {
+          "text": "Free Aim",
+          "type": "section"
+        },
+        {
+          "id": "bFreeAim:Look",
+          "text": "Free Aim",
+          "type": "switcher",
+          "help": "<font size=\"15\">The gun moves freely in a box on screen and the view only turns at the edge, like Bodycam. Bullets follow the barrel and the crosshair follows the gun. Default on.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "bCrosshairFollow:Main",
+          "text": "Crosshair Follows Gun",
+          "type": "switcher",
+          "help": "<font size=\"15\">With Free Aim on, the crosshair moves with your gun to mark where shots go. Turn off if frame generation makes it look broken. Default on.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "text": "Crosshair & Shots",
+          "type": "section"
+        },
+        {
+          "id": "iHipAim:Look",
+          "text": "Shots Follow",
+          "type": "dropdown",
+          "help": "<font size=\"15\">The barrel: shots go where the gun points, with Free Aim on or off. The crosshair: vanilla, and only used with Free Aim off. Default is the barrel.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingInt",
+            "options": [
+              "The crosshair (vanilla)",
+              "The barrel"
+            ]
+          }
+        },
+        {
+          "id": "iHitIndicator:Look",
+          "text": "Hit Marker",
+          "type": "dropdown",
+          "help": "<font size=\"15\">The red marker that flashes when you damage something. It sits outside the crosshair, so with the gun off centre it stays at screen centre while your shot lands elsewhere. Default is move it with the gun.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingInt",
+            "options": [
+              "Leave it alone",
+              "Move it with the gun",
+              "Hide it"
+            ]
+          }
+        },
+        {
+          "id": "fCrosshairScale:Look",
+          "text": "Crosshair Offset Scale",
+          "type": "slider",
+          "help": "<font size=\"15\">Calibrates how far the crosshair moves when it follows the gun. If the crosshair sits outside the gun's real aim (e.g. Default 1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.5,
+            "max": 1.5,
+            "step": 0.01,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Weapon Hold",
+          "type": "section"
+        },
+        {
+          "id": "bWeaponHold:Main",
+          "text": "Weapon Hold",
+          "type": "switcher",
+          "help": "<font size=\"15\">Holds the weapon out in front of you like Bodycam while aiming down the sights, so you see more of your arms. The aim is corrected automatically, so the sights still mark the shot. Default off.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "type": "spacer",
+          "numLines": 1
+        },
+        {
+          "text": "<font size=\"15\">Settings apply live - no restart needed. Default is the tuned feel.</font>",
+          "type": "text",
+          "html": true
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "Free Aim",
+      "content": [
+        {
+          "text": "<font size=\"15\">Switch Free Aim on or off on the General page. Free Aim does not affect scopes.</font>",
+          "type": "text",
+          "html": true
+        },
+        {
+          "text": "Free Aim Box",
+          "type": "section"
+        },
+        {
+          "id": "fFreeAimYawDeg:Look",
+          "text": "Box Width",
+          "type": "slider",
+          "help": "<font size=\"15\">How far (degrees) the gun can move left or right before the view turns. Measured off Bodycam footage: its gun roams about a third as far as Bodycam-for-Fallout used to allow. Default 3.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.5,
+            "max": 25,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fFreeAimPitchDeg:Look",
+          "text": "Box Height",
+          "type": "slider",
+          "help": "<font size=\"15\">How far (degrees) the gun can move up or down before the view turns. Measured off Bodycam footage. Default 2.2.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.5,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fFreeAimSpeed:Look",
+          "text": "Gun Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How much of your mouse movement moves the gun inside the box; the rest turns the view. Higher = the gun roams more freely before the view follows, lower = heavier, the view comes along sooner. Default 0.8.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.3,
+            "max": 1.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fViewFloat:Look",
+          "text": "Screen Float",
+          "type": "slider",
+          "help": "<font size=\"15\">How much the view drifts behind the gun instead of tracking it rigidly, so the screen settles as the gun moves. Catch-up Speed and Smoothness on Look &amp; Lean shape it. Default 0.6.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fFreeAimRecenter:Look",
+          "text": "Recenter Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How quickly the gun drifts back to the centre on its own. 0 = it stays where you left it. Default 1.2.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 5,
+            "step": 0.1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Accuracy",
+          "type": "section"
+        },
+        {
+          "id": "iPinpoint:Look",
+          "text": "Shots Go Where The Sights Point",
+          "type": "dropdown",
+          "help": "<font size=\"15\">Removes the weapon's spread so the bullet lands exactly on the sights. That scatter is applied after your aim, so nothing else can remove it. Default is iron sights only.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingInt",
+            "options": [
+              "Off - vanilla spread",
+              "Iron sights only",
+              "Always (hip fire too)"
+            ]
+          }
+        },
+        {
+          "text": "<font size=\"15\">Crosshair, Hit Marker and Shots Follow are on the General page.</font>",
+          "type": "text",
+          "html": true
+        },
+        {
+          "text": "<font size=\"15\">Settings apply live - no restart needed.</font>",
+          "type": "text",
+          "html": true
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "Weapon Hold",
+      "content": [
+        {
+          "text": "<font size=\"15\">Switch Weapon Hold on or off on the General page. It works while aiming down iron sights, for every weapon type; scopes are never affected. Gun type is detected from the weapon and its mods.</font>",
+          "type": "text",
+          "html": true
+        },
+        {
+          "text": "Making the gun look further away",
+          "type": "section"
+        },
+        {
+          "text": "<font size=\"15\">Raising Sights FOV Change or Hip Weapon FOV Change draws the gun with a wider lens than the world, so it looks further away. Bodycam corrects your aim for that, so the sights keep marking the shot.</font>",
+          "type": "text",
+          "html": true
+        },
+        {
+          "id": "fBlendRate:Hold",
+          "text": "Hip / Sights Blend Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How quickly the hold changes when you aim in/out or swap weapons. Default 12.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fScoped:Hold",
+          "text": "Scoped Weapons",
+          "type": "slider",
+          "help": "<font size=\"15\">How much of the sights distance and weapon FOV change a gun with a scope fitted gets. 1 = the same as iron sights, 0 = the scope stays where the game puts it. Default 0.65.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fSightsUpDown:Hold",
+          "text": "Sights Calibration",
+          "type": "slider",
+          "help": "<font size=\"15\">Fine-tunes the gun's height while aiming down sights. + raises the gun, - lowers it. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -8,
+            "max": 8,
+            "step": 0.1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Low Ready (hip fire)",
+          "type": "section"
+        },
+        {
+          "id": "bLowReady:Hold",
+          "text": "Low Ready",
+          "type": "switcher",
+          "help": "<font size=\"15\">Hip fire: the gun rests down and to the left while you are not shooting, and snaps up when you shoot or aim. Works with or without Weapon Hold. Default on.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "fHipFireLevel:Hold",
+          "text": "Level Muzzle When Firing",
+          "type": "slider",
+          "help": "<font size=\"15\">While you shoot from the hip, takes this share of the muzzle dip out so the barrel points at the crosshair. 0 = the dip stays. Default 1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLowReadyDelay:Hold",
+          "text": "Stay Raised After Shooting",
+          "type": "slider",
+          "help": "<font size=\"15\">Seconds the gun stays up after your last shot before settling back into the low ready. Default 0.8.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 10,
+            "step": 0.1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLowReadyRaiseRate:Hold",
+          "text": "Raise Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How fast the gun comes up when you shoot or aim. Default 12.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLowReadyLowerRate:Hold",
+          "text": "Lower Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How slowly the gun settles back down. Default 1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.5,
+            "max": 15,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Pistols",
+          "type": "section"
+        },
+        {
+          "id": "fPistolHipForward:Hold",
+          "text": "Hip Push",
+          "type": "slider",
+          "help": "<font size=\"15\">Pushes the arms out in hip fire (needs Weapon Hold). Large values can show the cut end of the arm mesh. Default 5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -5,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPistolHipHeight:Hold",
+          "text": "Hip Height",
+          "type": "slider",
+          "help": "<font size=\"15\">Raised hip-fire height. - = lower, + = higher. Default -1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPistolHipFovOffset:Hold",
+          "text": "Hip Weapon FOV Change",
+          "type": "slider",
+          "help": "<font size=\"15\">Weapon FOV for this type in hip fire. + makes the weapon and arms look smaller and further away, - bigger and closer. Default 5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -15,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPistolHipRaise:Hold",
+          "text": "Hip Raise On Fire",
+          "type": "slider",
+          "help": "<font size=\"15\">Lifts the hip-fire weapon this much while you shoot, then it settles back to Hip Height. Uses the Raise / Lower speeds. Default 5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPistolHipSide:Hold",
+          "text": "Hip Center",
+          "type": "slider",
+          "help": "<font size=\"15\">Raised hip-fire position across the screen. - = toward the centre, + = further right. Default -5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPistolHipPitchDeg:Hold",
+          "text": "Hip Muzzle Angle",
+          "type": "slider",
+          "help": "<font size=\"15\">Raised hip-fire muzzle angle, on top of Resting Muzzle Pitch. + = up, - = down. Default -4.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPistolLowReadyPitchDeg:Hold",
+          "text": "Low Ready Muzzle Angle",
+          "type": "slider",
+          "help": "<font size=\"15\">Muzzle angle in the low ready. + tips it down, - tips it up. Default 10.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -45,
+            "max": 45,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPistolLowReadyYawDeg:Hold",
+          "text": "Low Ready Swing Left",
+          "type": "slider",
+          "help": "<font size=\"15\">How far the muzzle swings to the left in the low ready. Negative swings right. Default 15.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -90,
+            "max": 90,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPistolLowReadyArmShare:Hold",
+          "text": "Low Ready Arm Swing",
+          "type": "slider",
+          "help": "<font size=\"15\">Share of Swing Left the arms follow; the gun turns the rest in the hand. Below 1 on a two-handed gun pulls it out of the support hand. Default 0.1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPistolLowReadyDrop:Hold",
+          "text": "Low Ready Height",
+          "type": "slider",
+          "help": "<font size=\"15\">Pans the lowered weapon up or down the screen. - = lower, + = higher, 0 = where it normally sits. Default 8.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -40,
+            "max": 40,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPistolLowReadySide:Hold",
+          "text": "Low Ready Center",
+          "type": "slider",
+          "help": "<font size=\"15\">Pans the lowered weapon across the screen. - = left, + = right, 0 = where it normally sits. Default -0.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -40,
+            "max": 40,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPistolSightsForward:Hold",
+          "text": "Iron Sights Distance",
+          "type": "slider",
+          "help": "<font size=\"15\">How far out the gun sits when aiming down iron sights - more eye relief, smaller sight picture. Sights stay lined up. Default 55.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -5,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPistolFovOffset:Hold",
+          "text": "Sights FOV Change",
+          "type": "slider",
+          "help": "<font size=\"15\">Weapon FOV for this type while aiming. + makes the gun and arms look smaller and further away, - bigger and closer. Default 50.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -15,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Rifles / SMGs",
+          "type": "section"
+        },
+        {
+          "id": "fRifleHipForward:Hold",
+          "text": "Hip Push",
+          "type": "slider",
+          "help": "<font size=\"15\">Pushes the arms out in hip fire (needs Weapon Hold). Large values can show the cut end of the arm mesh. Default 15.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -5,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRifleHipHeight:Hold",
+          "text": "Hip Height",
+          "type": "slider",
+          "help": "<font size=\"15\">Raised hip-fire height. - = lower, + = higher. Default -1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRifleHipFovOffset:Hold",
+          "text": "Hip Weapon FOV Change",
+          "type": "slider",
+          "help": "<font size=\"15\">Weapon FOV for this type in hip fire. + makes the weapon and arms look smaller and further away, - bigger and closer. Default 5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -15,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRifleHipRaise:Hold",
+          "text": "Hip Raise On Fire",
+          "type": "slider",
+          "help": "<font size=\"15\">Lifts the hip-fire weapon this much while you shoot, then it settles back to Hip Height. Uses the Raise / Lower speeds. Default 0.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRifleHipSide:Hold",
+          "text": "Hip Center",
+          "type": "slider",
+          "help": "<font size=\"15\">Raised hip-fire position across the screen. - = toward the centre, + = further right. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRifleHipPitchDeg:Hold",
+          "text": "Hip Muzzle Angle",
+          "type": "slider",
+          "help": "<font size=\"15\">Raised hip-fire muzzle angle, on top of Resting Muzzle Pitch. + = up, - = down. Default -4.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRifleLowReadyPitchDeg:Hold",
+          "text": "Low Ready Muzzle Angle",
+          "type": "slider",
+          "help": "<font size=\"15\">Muzzle angle in the low ready. + tips it down, - tips it up. Default 10.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -45,
+            "max": 45,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRifleLowReadyYawDeg:Hold",
+          "text": "Low Ready Swing Left",
+          "type": "slider",
+          "help": "<font size=\"15\">How far the muzzle swings to the left in the low ready. Negative swings right. Default 45.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -90,
+            "max": 90,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRifleLowReadyArmShare:Hold",
+          "text": "Low Ready Arm Swing",
+          "type": "slider",
+          "help": "<font size=\"15\">Share of Swing Left the arms follow; the gun turns the rest in the hand. Below 1 on a two-handed gun pulls it out of the support hand. Default 1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRifleLowReadyDrop:Hold",
+          "text": "Low Ready Height",
+          "type": "slider",
+          "help": "<font size=\"15\">Pans the lowered weapon up or down the screen. - = lower, + = higher, 0 = where it normally sits. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -40,
+            "max": 40,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRifleLowReadySide:Hold",
+          "text": "Low Ready Center",
+          "type": "slider",
+          "help": "<font size=\"15\">Pans the lowered weapon across the screen. - = left, + = right, 0 = where it normally sits. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -40,
+            "max": 40,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRifleSightsForward:Hold",
+          "text": "Iron Sights Distance",
+          "type": "slider",
+          "help": "<font size=\"15\">How far out the gun sits when aiming down iron sights - more eye relief, smaller sight picture. Sights stay lined up. Default 50.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -5,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRifleFovOffset:Hold",
+          "text": "Sights FOV Change",
+          "type": "slider",
+          "help": "<font size=\"15\">Weapon FOV for this type while aiming. + makes the gun and arms look smaller and further away, - bigger and closer. Default 40.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -15,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Shotguns",
+          "type": "section"
+        },
+        {
+          "id": "fShotgunHipForward:Hold",
+          "text": "Hip Push",
+          "type": "slider",
+          "help": "<font size=\"15\">Pushes the arms out in hip fire (needs Weapon Hold). Large values can show the cut end of the arm mesh. Default 15.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -5,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fShotgunHipHeight:Hold",
+          "text": "Hip Height",
+          "type": "slider",
+          "help": "<font size=\"15\">Raised hip-fire height. - = lower, + = higher. Default -20.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fShotgunHipFovOffset:Hold",
+          "text": "Hip Weapon FOV Change",
+          "type": "slider",
+          "help": "<font size=\"15\">Weapon FOV for this type in hip fire. + makes the weapon and arms look smaller and further away, - bigger and closer. Default 5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -15,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fShotgunHipRaise:Hold",
+          "text": "Hip Raise On Fire",
+          "type": "slider",
+          "help": "<font size=\"15\">Lifts the hip-fire weapon this much while you shoot, then it settles back to Hip Height. Uses the Raise / Lower speeds. Default 10.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fShotgunHipSide:Hold",
+          "text": "Hip Center",
+          "type": "slider",
+          "help": "<font size=\"15\">Raised hip-fire position across the screen. - = toward the centre, + = further right. Default 15.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fShotgunHipPitchDeg:Hold",
+          "text": "Hip Muzzle Angle",
+          "type": "slider",
+          "help": "<font size=\"15\">Raised hip-fire muzzle angle, on top of Resting Muzzle Pitch. + = up, - = down. Default 9.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fShotgunLowReadyPitchDeg:Hold",
+          "text": "Low Ready Muzzle Angle",
+          "type": "slider",
+          "help": "<font size=\"15\">Muzzle angle in the low ready. + tips it down, - tips it up. Default -30.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -45,
+            "max": 45,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fShotgunLowReadyYawDeg:Hold",
+          "text": "Low Ready Swing Left",
+          "type": "slider",
+          "help": "<font size=\"15\">How far the muzzle swings to the left in the low ready. Negative swings right. Default 70.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -90,
+            "max": 90,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fShotgunLowReadyArmShare:Hold",
+          "text": "Low Ready Arm Swing",
+          "type": "slider",
+          "help": "<font size=\"15\">Share of Swing Left the arms follow; the gun turns the rest in the hand. Below 1 on a two-handed gun pulls it out of the support hand. Default 1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fShotgunLowReadyDrop:Hold",
+          "text": "Low Ready Height",
+          "type": "slider",
+          "help": "<font size=\"15\">Pans the lowered weapon up or down the screen. - = lower, + = higher, 0 = where it normally sits. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -40,
+            "max": 40,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fShotgunLowReadySide:Hold",
+          "text": "Low Ready Center",
+          "type": "slider",
+          "help": "<font size=\"15\">Pans the lowered weapon across the screen. - = left, + = right, 0 = where it normally sits. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -40,
+            "max": 40,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fShotgunSightsForward:Hold",
+          "text": "Iron Sights Distance",
+          "type": "slider",
+          "help": "<font size=\"15\">How far out the gun sits when aiming down iron sights - more eye relief, smaller sight picture. Sights stay lined up. Default 40.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -5,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fShotgunFovOffset:Hold",
+          "text": "Sights FOV Change",
+          "type": "slider",
+          "help": "<font size=\"15\">Weapon FOV for this type while aiming. + makes the gun and arms look smaller and further away, - bigger and closer. Default 40.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -15,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Heavy Weapons",
+          "type": "section"
+        },
+        {
+          "id": "fHeavyHipForward:Hold",
+          "text": "Hip Push",
+          "type": "slider",
+          "help": "<font size=\"15\">Pushes the arms out in hip fire (needs Weapon Hold). Large values can show the cut end of the arm mesh. Default 20.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -5,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHeavyHipHeight:Hold",
+          "text": "Hip Height",
+          "type": "slider",
+          "help": "<font size=\"15\">Raised hip-fire height. - = lower, + = higher. Default -3.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHeavyHipFovOffset:Hold",
+          "text": "Hip Weapon FOV Change",
+          "type": "slider",
+          "help": "<font size=\"15\">Weapon FOV for this type in hip fire. + makes the weapon and arms look smaller and further away, - bigger and closer. Default 10.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -15,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHeavyHipRaise:Hold",
+          "text": "Hip Raise On Fire",
+          "type": "slider",
+          "help": "<font size=\"15\">Lifts the hip-fire weapon this much while you shoot, then it settles back to Hip Height. Uses the Raise / Lower speeds. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHeavyHipSide:Hold",
+          "text": "Hip Center",
+          "type": "slider",
+          "help": "<font size=\"15\">Raised hip-fire position across the screen. - = toward the centre, + = further right. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHeavyHipPitchDeg:Hold",
+          "text": "Hip Muzzle Angle",
+          "type": "slider",
+          "help": "<font size=\"15\">Raised hip-fire muzzle angle, on top of Resting Muzzle Pitch. + = up, - = down. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHeavyLowReadyPitchDeg:Hold",
+          "text": "Low Ready Muzzle Angle",
+          "type": "slider",
+          "help": "<font size=\"15\">Muzzle angle in the low ready. + tips it down, - tips it up. Default -20.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -45,
+            "max": 45,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHeavyLowReadyYawDeg:Hold",
+          "text": "Low Ready Swing Left",
+          "type": "slider",
+          "help": "<font size=\"15\">How far the muzzle swings to the left in the low ready. Negative swings right. Default 40.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -90,
+            "max": 90,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHeavyLowReadyArmShare:Hold",
+          "text": "Low Ready Arm Swing",
+          "type": "slider",
+          "help": "<font size=\"15\">Share of Swing Left the arms follow; the gun turns the rest in the hand. Below 1 on a two-handed gun pulls it out of the support hand. Default 1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHeavyLowReadyDrop:Hold",
+          "text": "Low Ready Height",
+          "type": "slider",
+          "help": "<font size=\"15\">Pans the lowered weapon up or down the screen. - = lower, + = higher, 0 = where it normally sits. Default -8.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -40,
+            "max": 40,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHeavyLowReadySide:Hold",
+          "text": "Low Ready Center",
+          "type": "slider",
+          "help": "<font size=\"15\">Pans the lowered weapon across the screen. - = left, + = right, 0 = where it normally sits. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -40,
+            "max": 40,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHeavySightsForward:Hold",
+          "text": "Iron Sights Distance",
+          "type": "slider",
+          "help": "<font size=\"15\">How far out the gun sits when aiming down iron sights - more eye relief, smaller sight picture. Sights stay lined up. Default 20.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -5,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHeavyFovOffset:Hold",
+          "text": "Sights FOV Change",
+          "type": "slider",
+          "help": "<font size=\"15\">Weapon FOV for this type while aiming. + makes the gun and arms look smaller and further away, - bigger and closer. Default 40.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -15,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Melee / Unarmed",
+          "type": "section"
+        },
+        {
+          "id": "fMeleeHipForward:Hold",
+          "text": "Hip Push",
+          "type": "slider",
+          "help": "<font size=\"15\">Pushes the arms out in hip fire (needs Weapon Hold). Large values can show the cut end of the arm mesh. Default 10.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -5,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fMeleeHipHeight:Hold",
+          "text": "Hip Height",
+          "type": "slider",
+          "help": "<font size=\"15\">Raised hip-fire height. - = lower, + = higher. Default -6.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fMeleeHipFovOffset:Hold",
+          "text": "Hip Weapon FOV Change",
+          "type": "slider",
+          "help": "<font size=\"15\">Weapon FOV for this type in hip fire. + makes the weapon and arms look smaller and further away, - bigger and closer. Default 10.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -15,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fMeleeHipRaise:Hold",
+          "text": "Hip Raise On Fire",
+          "type": "slider",
+          "help": "<font size=\"15\">Lifts the hip-fire weapon this much while you shoot, then it settles back to Hip Height. Uses the Raise / Lower speeds. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fMeleeHipSide:Hold",
+          "text": "Hip Center",
+          "type": "slider",
+          "help": "<font size=\"15\">Raised hip-fire position across the screen. - = toward the centre, + = further right. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fMeleeHipPitchDeg:Hold",
+          "text": "Hip Muzzle Angle",
+          "type": "slider",
+          "help": "<font size=\"15\">Raised hip-fire muzzle angle, on top of Resting Muzzle Pitch. + = up, - = down. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fMeleeLowReadyPitchDeg:Hold",
+          "text": "Low Ready Muzzle Angle",
+          "type": "slider",
+          "help": "<font size=\"15\">Muzzle angle in the low ready. + tips it down, - tips it up. Default -5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -45,
+            "max": 45,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fMeleeLowReadyYawDeg:Hold",
+          "text": "Low Ready Swing Left",
+          "type": "slider",
+          "help": "<font size=\"15\">How far the muzzle swings to the left in the low ready. Negative swings right. Default -20.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -90,
+            "max": 90,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fMeleeLowReadyArmShare:Hold",
+          "text": "Low Ready Arm Swing",
+          "type": "slider",
+          "help": "<font size=\"15\">Share of Swing Left the arms follow; the gun turns the rest in the hand. Below 1 on a two-handed gun pulls it out of the support hand. Default 0.6.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fMeleeLowReadyDrop:Hold",
+          "text": "Low Ready Height",
+          "type": "slider",
+          "help": "<font size=\"15\">Pans the lowered weapon up or down the screen. - = lower, + = higher, 0 = where it normally sits. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -40,
+            "max": 40,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fMeleeLowReadySide:Hold",
+          "text": "Low Ready Center",
+          "type": "slider",
+          "help": "<font size=\"15\">Pans the lowered weapon across the screen. - = left, + = right, 0 = where it normally sits. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -40,
+            "max": 40,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fMeleeSightsForward:Hold",
+          "text": "Iron Sights Distance",
+          "type": "slider",
+          "help": "<font size=\"15\">How far out the gun sits when aiming down iron sights - more eye relief, smaller sight picture. Sights stay lined up. Default 15.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -5,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fMeleeFovOffset:Hold",
+          "text": "Sights FOV Change",
+          "type": "slider",
+          "help": "<font size=\"15\">Weapon FOV for this type while aiming. + makes the gun and arms look smaller and further away, - bigger and closer. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -15,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "<font size=\"15\">Settings apply live - no restart needed.</font>",
+          "type": "text",
+          "html": true
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "Look & Lean",
+      "content": [
+        {
+          "text": "View Lag (gun leads, view catches up)",
+          "type": "section"
+        },
+        {
+          "id": "bViewLag:Toggles",
+          "text": "Enable View Lag",
+          "type": "switcher",
+          "help": "<font size=\"15\">Off: the view turns exactly with the mouse. For other mods that move the camera.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "fLagMaxDeg:Look",
+          "text": "Max View Lag",
+          "type": "slider",
+          "help": "<font size=\"15\">How far (degrees) the view can trail behind the gun when you turn. 0 disables the lag - including Screen Float, which this also caps. Default 9.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLagFreq:Look",
+          "text": "Catch-up Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How quickly the view catches up to the gun. Lower = lazier. Default 14.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 2,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLagDamping:Look",
+          "text": "Catch-up Smoothness",
+          "type": "slider",
+          "help": "<font size=\"15\">Below 1 overshoots slightly for an organic feel; 1 = no overshoot. With Free Aim on this shapes the Screen Float bounce. Default 0.6.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.3,
+            "max": 1.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Turn Response",
+          "type": "section"
+        },
+        {
+          "id": "fSensitivity:Turn",
+          "text": "Lean Sensitivity",
+          "type": "slider",
+          "help": "<font size=\"15\">How much turning it takes to lean the camera and gun. Lower this if you play at high mouse DPI or high in-game sensitivity and the gun moves too much. Default 1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.1,
+            "max": 2.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fDeadzoneRadS:Turn",
+          "text": "Lean Deadzone",
+          "type": "slider",
+          "help": "<font size=\"15\">Slow turning below this is ignored, so small mouse movements don't tilt anything. Raise it if the gun drifts while you make fine aim adjustments. Default 0.12.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1.0,
+            "step": 0.01,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Camera Tilt",
+          "type": "section"
+        },
+        {
+          "id": "bCameraTilt:Main",
+          "text": "Resting Camera Tilt",
+          "type": "switcher",
+          "help": "<font size=\"15\">Applies the constant resting tilt set below. Off = level resting horizon. Default on.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "bStrafeTilt:Main",
+          "text": "Camera Tilt When Strafing",
+          "type": "switcher",
+          "help": "<font size=\"15\">Lets the camera lean when you strafe (A/D). Off keeps the view from leaning on strafes; the gun still leans. Default on.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "fCameraTiltDeg:Roll",
+          "text": "Camera Tilt",
+          "type": "slider",
+          "help": "<font size=\"15\">How far the view rests tilted, in degrees. Positive hangs right, negative left, 0 = level. Default 1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -15,
+            "max": 15,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fTiltAlternate:Roll",
+          "text": "Tilt Wander",
+          "type": "slider",
+          "help": "<font size=\"15\">Average seconds before the camera settles to the other side. 0 = a fixed tilt that never moves. Default 25.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 120,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fTiltDriftRate:Roll",
+          "text": "Tilt Wander Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How quickly it eases across when it does change sides. Low is a slow settle you barely notice; high is a deliberate shift. Default 0.35.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.05,
+            "max": 3,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Camera Lean (into turns)",
+          "type": "section"
+        },
+        {
+          "id": "bTurnLean:Toggles",
+          "text": "Enable Camera Lean",
+          "type": "switcher",
+          "help": "<font size=\"15\">Off: no camera lean from turning.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "fTurnDegPerRadS:Roll",
+          "text": "Lean Into Turns",
+          "type": "slider",
+          "help": "<font size=\"15\">Camera tilt per unit of turning speed. - leans out of the turn (what real bodycams do), + leans into it, 0 = no lean from turning. Default -2.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -8,
+            "max": 8,
+            "step": 0.1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fMaxDeg:Roll",
+          "text": "Max Camera Lean",
+          "type": "slider",
+          "help": "<font size=\"15\">Largest camera tilt in degrees. Default 4.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Gun Lean",
+          "type": "section"
+        },
+        {
+          "id": "bGunLean:Toggles",
+          "text": "Enable Gun Lean",
+          "type": "switcher",
+          "help": "<font size=\"15\">Off: no gun tilt from turning, strafing or resting tilt. For weapon sway or inertia mods.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "fRestCantDeg:GunMotion",
+          "text": "Resting Gun Tilt",
+          "type": "slider",
+          "help": "<font size=\"15\">Constant tilt the gun rests at in hip fire. Negative tilts the other way, 0 = upright. Default -2.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -15,
+            "max": 15,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRestCantAdsDeg:GunMotion",
+          "text": "Resting Gun Tilt (Aiming)",
+          "type": "slider",
+          "help": "<font size=\"15\">Constant tilt while aiming down sights. It blends over as you raise the sights. Default -1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -15,
+            "max": 15,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRestPitchDeg:GunMotion",
+          "text": "Resting Muzzle Angle",
+          "type": "slider",
+          "help": "<font size=\"15\">Hip fire only: + points the muzzle up, - down. With Resting Gun Tilt it holds the gun on a diagonal. Default -6.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -15,
+            "max": 15,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fCantTurnDegPerRadS:GunMotion",
+          "text": "Gun Lean Into Turns",
+          "type": "slider",
+          "help": "<font size=\"15\">Extra gun cant per unit of turning speed, on top of the camera lean. Negative leans the other way. Default 3.1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -12,
+            "max": 12,
+            "step": 0.1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fCantMaxDeg:GunMotion",
+          "text": "Max Extra Gun Lean",
+          "type": "slider",
+          "help": "<font size=\"15\">Largest extra gun cant in degrees. Default 7.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 25,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fFollowViewRoll:GunMotion",
+          "text": "Gun Follows Camera Lean",
+          "type": "slider",
+          "help": "<font size=\"15\">Gun lean = this x camera lean + extra cant. Negative leans the gun against the camera. Default 1.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -3,
+            "max": 3,
+            "step": 0.1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRollMaxDeg:GunMotion",
+          "text": "Max Total Gun Lean",
+          "type": "slider",
+          "help": "<font size=\"15\">Clamp on total gun lean (not counting resting tilt). Default 16.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 40,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Lean Response",
+          "type": "section"
+        },
+        {
+          "id": "fRate:Roll",
+          "text": "Camera Lean Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How fast camera lean follows your turning. Default 5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fStrafeDeg:Roll",
+          "text": "Camera Lean From Strafing",
+          "type": "slider",
+          "help": "<font size=\"15\">Camera tilt when strafing A/D. + leans into the strafe, - away from it, 0 = lean from turning only. Default -2.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -15,
+            "max": 15,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fCantStrafeDeg:GunMotion",
+          "text": "Gun Lean From Strafing",
+          "type": "slider",
+          "help": "<font size=\"15\">Extra gun cant when strafing, scaled by the Intensity Preset. Negative leans the other way. Default 4.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -15,
+            "max": 15,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fCantRate:GunMotion",
+          "text": "Gun Lean Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How fast the gun rolls into a lean. Lower is smoother and heavier through a left-to-right change of direction. Default 7.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fCantDamping:GunMotion",
+          "text": "Gun Lean Smoothness",
+          "type": "slider",
+          "help": "<font size=\"15\">1 = the gun rolls onto its new lean without overshooting. Below 1 it rocks slightly past and comes back, which feels looser. Default 1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.3,
+            "max": 1.5,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRollDeg:Bob",
+          "text": "Footstep Roll",
+          "type": "slider",
+          "help": "<font size=\"15\">Extra tilt with each step, on top of stride tilt. Default 0.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 5,
+            "step": 0.1,
+            "sourceType": "ModSettingFloat"
+          }
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "Corner Peek",
+      "content": [
+        {
+          "id": "bCornerPeek:Toggles",
+          "text": "Enable Corner Peek",
+          "type": "switcher",
+          "help": "<font size=\"15\">Off: no leaning around corners. For other lean or peek mods.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "text": "<font size=\"15\">At a corner with one side open you lean out on your own; tap A or D toward the wall to step back into cover. Leans while aiming; Hip Fire Lean adds some from the hip.</font>",
+          "type": "text",
+          "html": true
+        },
+        {
+          "id": "fPeekDist:CornerGun",
+          "text": "Corner: Gun Lead Distance",
+          "type": "slider",
+          "help": "<font size=\"15\">At a corner with one side open you lean out on your own; tap A or D toward the wall to pull back into cover. Leans while aiming; Hip Fire Lean adds some from the hip. Default 65.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 90,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fYawDeg:CornerGun",
+          "text": "Corner: Gun Turn",
+          "type": "slider",
+          "help": "<font size=\"15\">How far the gun turns to point around the corner, in degrees. With Shots Follow set to the barrel this moves where rounds land while peeking. Default 6.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 25,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPeekDist:CornerCamera",
+          "text": "Corner: Camera Shift",
+          "type": "slider",
+          "help": "<font size=\"15\">How far the view follows the gun around the corner. Default 60.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 90,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fDrop:CornerCamera",
+          "text": "Corner: Camera Drop",
+          "type": "slider",
+          "help": "<font size=\"15\">How far the view lowers as you lean out, like leaning from the hips. 0 = straight sideways. Default 8.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 30,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRollDeg:CornerCamera",
+          "text": "Corner: Camera Tilt",
+          "type": "slider",
+          "help": "<font size=\"15\">View tilt while leading around a corner. Negative tilts the other way. Default 10.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fCantDeg:CornerGun",
+          "text": "Corner: Gun Tilt",
+          "type": "slider",
+          "help": "<font size=\"15\">Gun tilt on top of the camera tilt while peeking. Negative tilts the other way. Default 8.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -30,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fProbeForward:Detection",
+          "text": "Wall Probe Distance",
+          "type": "slider",
+          "help": "<font size=\"15\">How far ahead to look for a wall. Default 75.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 30,
+            "max": 200,
+            "step": 5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPeekDetect:Detection",
+          "text": "Cover Detect Distance",
+          "type": "slider",
+          "help": "<font size=\"15\">Cover must be within this distance to lead around it. The lean fades in from here. Default 100.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 30,
+            "max": 600,
+            "step": 10,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPeekFull:Detection",
+          "text": "Full Lean Distance",
+          "type": "slider",
+          "help": "<font size=\"15\">At or inside this distance from cover the lean is at full strength, ramping down to nothing at Cover Detect Distance. Default 30.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 5,
+            "max": 150,
+            "step": 5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPeekStartDeg:Detection",
+          "text": "Peek Start Angle",
+          "type": "slider",
+          "help": "<font size=\"15\">How far you turn into the wall before the lean starts. Looking along the wall = no lean. Default 5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 45,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPeekFullDeg:Detection",
+          "text": "Full Lean Angle",
+          "type": "slider",
+          "help": "<font size=\"15\">Turned this far into the wall = full lean. Lower is quicker. Default 30.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 5,
+            "max": 90,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPeekHipScale:Detection",
+          "text": "Hip Fire Lean",
+          "type": "slider",
+          "help": "<font size=\"15\">How much of the aimed corner lean you get from the hip. 0 = corner peek only while aiming. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPeekOverDeg:Detection",
+          "text": "Over-Turn Allowance",
+          "type": "slider",
+          "help": "<font size=\"15\">How far past facing the wall square you can keep turning and stay leaned out. It lets go over the next 15 degrees. Default 120.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 360,
+            "step": 5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPeekMinScale:Detection",
+          "text": "Minimum Lean",
+          "type": "slider",
+          "help": "<font size=\"15\">Floor on that ramp, so a far corner still leans a little. 0 = the ramp goes all the way to nothing. Default 0.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRate:CornerGun",
+          "text": "Corner: Gun Lean Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How fast the gun swings out around the corner. Lower is a slower, heavier lean. Default 3.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fDamping:CornerGun",
+          "text": "Corner: Gun Lean Smoothness",
+          "type": "slider",
+          "help": "<font size=\"15\">1 = the gun settles into the lean without overshooting. Below 1 it swings slightly past first. Default 0.8.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.3,
+            "max": 1.5,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRate:CornerCamera",
+          "text": "Corner: Camera Lean Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How fast the view follows around the corner. Keep it below the gun speed so the gun leads. Default 3.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "Gun Handling",
+      "content": [
+        {
+          "text": "Turning",
+          "type": "section"
+        },
+        {
+          "id": "bLookInertia:Toggles",
+          "text": "Enable Weapon Inertia",
+          "type": "switcher",
+          "help": "<font size=\"15\">Off: no gun swing when you turn. For weapon inertia or sway mods.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "fLookInertia:GunMotion",
+          "text": "Inertia",
+          "type": "slider",
+          "help": "<font size=\"15\">How far the gun swings against the way you turn. With Free Aim on it only tilts and slides, so it does not fight the lead. Default 8.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLookInertiaMax:GunMotion",
+          "text": "Max Inertia",
+          "type": "slider",
+          "help": "<font size=\"15\">Largest the inertia swing can get, in degrees, however fast you spin. Default 12.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 40,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLookInertiaCant:GunMotion",
+          "text": "Inertia Tilt",
+          "type": "slider",
+          "help": "<font size=\"15\">How much the gun tilts with the swing, the same way as Gun Lean Into Turns. Negative flips it, 0 = no tilt. Default 1.25.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -2,
+            "max": 2,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLookInertiaSlide:GunMotion",
+          "text": "Inertia Slide",
+          "type": "slider",
+          "help": "<font size=\"15\">How far the gun slides sideways and down with the swing. 0 = no slide. Default 1.25.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 2,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLookInertiaRate:GunMotion",
+          "text": "Inertia Recovery Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How quickly the gun catches back up once you stop turning. Lower is heavier and lazier. Default 5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 25,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLookInertiaDamping:GunMotion",
+          "text": "Inertia Smoothness",
+          "type": "slider",
+          "help": "<font size=\"15\">Below 1 the gun settles slightly past centre before coming to rest, which reads as organic rather than sprung. 1 = no overshoot. Default 0.6.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.3,
+            "max": 1.2,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Strafing & Bob",
+          "type": "section"
+        },
+        {
+          "id": "bGunDrag:Toggles",
+          "text": "Enable Gun Drag",
+          "type": "switcher",
+          "help": "<font size=\"15\">Off: the gun does not trail behind sideways movement.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "fInertia:GunMotion",
+          "text": "Gun Drag (Strafing)",
+          "type": "slider",
+          "help": "<font size=\"15\">How much the gun trails behind SIDEWAYS MOVEMENT. This one does nothing when you only turn the view - that is Weapon Inertia above. Default 0.075.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 0.1,
+            "step": 0.005,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fInertiaMax:GunMotion",
+          "text": "Max Gun Drag (Strafing)",
+          "type": "slider",
+          "help": "<font size=\"15\">Largest gun drag offset. Default 8.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 15,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fInertiaRate:GunMotion",
+          "text": "Gun Drag Speed (Strafing)",
+          "type": "slider",
+          "help": "<font size=\"15\">How fast gun drag responds. Default 15.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fBobScale:GunMotion",
+          "text": "Gun Bob Scale",
+          "type": "slider",
+          "help": "<font size=\"15\">1 = gun moves with the view bob; above 1 the gun bounces more than the view. Default 1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 2,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "Recoil",
+      "content": [
+        {
+          "text": "<font size=\"15\">Per-weapon values are peak muzzle climb in DEGREES. Every shot adds to a spring, so automatic fire climbs. The weapon and the view have separate springs - the weapon snaps, the view follows slower. That gap is what reads as force.</font>",
+          "type": "text",
+          "html": true
+        },
+        {
+          "text": "Recoil",
+          "type": "section"
+        },
+        {
+          "id": "bEnabled:Recoil",
+          "text": "Enable Recoil",
+          "type": "switcher",
+          "help": "<font size=\"15\">Bodycam's own recoil, on top of whatever the weapon already does. Off = vanilla recoil only.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "fAimShare:Recoil",
+          "text": "Aim Impact",
+          "type": "slider",
+          "help": "<font size=\"15\">How much of the kick moves your real point of aim, so sustained fire climbs and has to be controlled. 0 = the gun jumps but your rounds do not. Default 0.4.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1,
+            "step": 0.02,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fGunKick:Recoil",
+          "text": "Weapon Kick",
+          "type": "slider",
+          "help": "<font size=\"15\">At 1 the per-weapon Climb value is exactly how far the gun rises on screen. Default 1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 3,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fCameraKick:Recoil",
+          "text": "Camera Kick",
+          "type": "slider",
+          "help": "<font size=\"15\">Extra kick on the view, through its own slower spring. Most of the view movement already comes from Aim Impact, so this is only a top-up. Default 0.34.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 2,
+            "step": 0.02,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fADSScale:Recoil",
+          "text": "Aiming Multiplier",
+          "type": "slider",
+          "help": "<font size=\"15\">All recoil x this while aiming down sights. The per-weapon Climb values are the hip figures. Default 0.63.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.2,
+            "max": 1.5,
+            "step": 0.02,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Recovery",
+          "type": "section"
+        },
+        {
+          "id": "fSpringHz:Recoil",
+          "text": "Weapon Recovery Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How fast the weapon rings and settles. Higher = snappier. Default 3.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 25,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fDamping:Recoil",
+          "text": "Weapon Settle",
+          "type": "slider",
+          "help": "<font size=\"15\">1 = settles without overshooting; lower corrects past rest first. Default 0.75.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.3,
+            "max": 1.2,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fAimHz:Recoil",
+          "text": "Aim Recovery Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How fast your point of aim comes back down. Keep it WELL below Weapon Recovery Speed - if the aim recovers as fast as the gun, a burst resets between rounds and never climbs. Default 1.25.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.5,
+            "max": 12,
+            "step": 0.25,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fAimDamping:Recoil",
+          "text": "Aim Settle",
+          "type": "slider",
+          "help": "<font size=\"15\">1 = the aim comes back down without dipping below where you started. Default 0.75.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.3,
+            "max": 1.2,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fCameraHz:Recoil",
+          "text": "View Recovery Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How fast the view follows and settles. Measured, Bodycam's view moves WITH the gun rather than behind it, so this sits close to Weapon Recovery Speed. Default 3.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fCameraDamping:Recoil",
+          "text": "View Settle",
+          "type": "slider",
+          "help": "<font size=\"15\">How cleanly the view settles. Default 0.75.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.3,
+            "max": 1.2,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fClimbRetention:Recoil",
+          "text": "Auto-Fire Climb",
+          "type": "slider",
+          "help": "<font size=\"15\">How much of the shot you are still recovering from carries into the next one. 0 = every shot kicks from rest, 1 = a full-auto burst climbs hard. Default 0.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Scatter",
+          "type": "section"
+        },
+        {
+          "id": "fHorizontal:Recoil",
+          "text": "Sideways Kick",
+          "type": "slider",
+          "help": "<font size=\"15\">Random left or right on each shot, as a share of the upward kick. A burst wanders instead of climbing straight. Default 2.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 3,
+            "step": 0.02,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRoll:Recoil",
+          "text": "Twist",
+          "type": "slider",
+          "help": "<font size=\"15\">Random twist of the weapon per shot. Visual only. Default 2.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 5,
+            "step": 0.1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Per Weapon Type (peak muzzle climb, degrees)",
+          "type": "section"
+        },
+        {
+          "id": "fPistolClimbDeg:Recoil",
+          "text": "Pistol Climb",
+          "type": "slider",
+          "help": "<font size=\"15\">How far a pistol's muzzle climbs on one HIP shot, in degrees. Iron sights get the Aiming Multiplier of this, which lands on the 3.78 degrees measured off Bodycam footage. Default 6.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 25,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRifleClimbDeg:Recoil",
+          "text": "Rifle / SMG Climb",
+          "type": "slider",
+          "help": "<font size=\"15\">Degrees of climb per shot. Lower than a pistol because it is shouldered. Default 3.7.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 25,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fShotgunClimbDeg:Recoil",
+          "text": "Shotgun Climb",
+          "type": "slider",
+          "help": "<font size=\"15\">Degrees of climb per discharge - once per shot, not once per pellet. Default 10.7.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 25,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHeavyClimbDeg:Recoil",
+          "text": "Heavy Climb",
+          "type": "slider",
+          "help": "<font size=\"15\">Degrees of climb per shot for heavy weapons. Default 7.4.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 25,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Chaos",
+          "type": "section"
+        },
+        {
+          "id": "fVariation:Recoil",
+          "text": "Shot Variation",
+          "type": "slider",
+          "help": "<font size=\"15\">How much each shot differs from the last, as a share either way. 0 = every round kicks identically and a burst climbs in a repeatable staircase; higher makes a string of shots genuinely unruly. Default 0.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 0.8,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRattle:Recoil",
+          "text": "Camera Rattle",
+          "type": "slider",
+          "help": "<font size=\"15\">A short sharp shake of the VIEW on each shot, in degrees, over the top of the smooth recoil. This is a body-mounted camera taking a gunshot rather than gliding through it. Default 1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 5,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRattleHz:Recoil",
+          "text": "Rattle Sharpness",
+          "type": "slider",
+          "help": "<font size=\"15\">How fast the rattle shakes. Higher is a tighter, harsher buzz. Default 22.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 5,
+            "max": 40,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRattleDecay:Recoil",
+          "text": "Rattle Fade",
+          "type": "slider",
+          "help": "<font size=\"15\">How quickly the rattle dies away. 18 is about 150 milliseconds. Default 18.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 4,
+            "max": 40,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPunch:Recoil",
+          "text": "Camera Punch",
+          "type": "slider",
+          "help": "<font size=\"15\">How hard the shot shoves your viewpoint back, in game units, so the shot lands in your body rather than only in your hands. 0 = no movement, rotation only. Default 0.35.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 3,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPunchHz:Recoil",
+          "text": "Punch Recovery Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How quickly your head comes back forward after the shove. Default 9.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 2,
+            "max": 25,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fSettle:Recoil",
+          "text": "Grip Re-settle",
+          "type": "slider",
+          "help": "<font size=\"15\">After a burst of three or more rounds the weapon drifts and resettles instead of parking cleanly, as if you were readjusting your grip. Degrees. Default 1.2.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 6,
+            "step": 0.1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Limits",
+          "type": "section"
+        },
+        {
+          "id": "fMaxPitch:Recoil",
+          "text": "Max Climb",
+          "type": "slider",
+          "help": "<font size=\"15\">Furthest the muzzle can climb, in degrees. Default 18.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 45,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fMaxYaw:Recoil",
+          "text": "Max Sideways",
+          "type": "slider",
+          "help": "<font size=\"15\">Furthest the muzzle can wander sideways, in degrees. Default 5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "Movement",
+      "content": [
+        {
+          "text": "<font size=\"15\">Bob, sway, footstep impact and breathing blend between walk, jog and sprint by your speed, and down to standing still. Bodycam does not change how fast you move, only how the view reacts.</font>",
+          "type": "text",
+          "html": true
+        },
+        {
+          "text": "Comfort",
+          "type": "section"
+        },
+        {
+          "id": "bHeadBob:Toggles",
+          "text": "Enable Head Bob",
+          "type": "switcher",
+          "help": "<font size=\"15\">Off: no walking, running or breathing bob. For other head bob mods.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "fMoveMotion:Bob",
+          "text": "Movement Motion",
+          "type": "slider",
+          "help": "<font size=\"15\">All the movement motion at once - bounce, side shift, stride swing and tilt, and the footstep kick, at every pace. 0 removes the lot and leaves the camera steady while you move. Default 1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 2,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "bNoSideMotion:Bob",
+          "text": "Motion Sickness Mode",
+          "type": "switcher",
+          "help": "<font size=\"15\">Removes all side-to-side movement at every pace. Bounce, footstep impact and breathing are left alone. Default off.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "text": "Walking",
+          "type": "section"
+        },
+        {
+          "id": "fVertical:BobWalk",
+          "text": "Bounce",
+          "type": "slider",
+          "help": "<font size=\"15\">How big the up/down footstep bounce is while walking. Default 1.8.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 12,
+            "step": 0.1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLateral:BobWalk",
+          "text": "Side Shift",
+          "type": "slider",
+          "help": "<font size=\"15\">Left-right weight shift while walking (a slide; subtle on its own). Default 0.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 8,
+            "step": 0.1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fSwayYawDeg:BobWalk",
+          "text": "Stride Swing",
+          "type": "slider",
+          "help": "<font size=\"15\">View swings left/right with each stride (degrees). View only, never the gun or your aim. Default 0.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 5,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fSwayRollDeg:BobWalk",
+          "text": "Stride Tilt",
+          "type": "slider",
+          "help": "<font size=\"15\">View tilts left/right with each stride (degrees). View only. Default 0.6.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 8,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fCycleHz:BobWalk",
+          "text": "Stride Rhythm",
+          "type": "slider",
+          "help": "<font size=\"15\">Full left+right strides per second. Default 0.9.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.3,
+            "max": 3,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fStepImpact:BobWalk",
+          "text": "Footstep Impact",
+          "type": "slider",
+          "help": "<font size=\"15\">Size of the sharp kick each time a foot lands while walking. 0 = off. Default 1.0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 12,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fBreathAmp:BobWalk",
+          "text": "Breathing",
+          "type": "slider",
+          "help": "<font size=\"15\">How deep your breathing is while walking. Blends with the pace either side of it, and down to Breathing (Standing) as you stop. Default 0.4.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 3,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fBreathHz:BobWalk",
+          "text": "Breathing Rate",
+          "type": "slider",
+          "help": "<font size=\"15\">Breaths per second while walking. Default 0.45.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.05,
+            "max": 3,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Jogging",
+          "type": "section"
+        },
+        {
+          "id": "fVertical:BobJog",
+          "text": "Bounce",
+          "type": "slider",
+          "help": "<font size=\"15\">How big the up/down footstep bounce is while jogging. Default 4.0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 12,
+            "step": 0.1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLateral:BobJog",
+          "text": "Side Shift",
+          "type": "slider",
+          "help": "<font size=\"15\">Left-right weight shift while jogging (a slide; subtle on its own). Default 1.0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 8,
+            "step": 0.1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fSwayYawDeg:BobJog",
+          "text": "Stride Swing",
+          "type": "slider",
+          "help": "<font size=\"15\">View swings left/right with each stride (degrees). View only, never the gun or your aim. Default 0.65.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 5,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fSwayRollDeg:BobJog",
+          "text": "Stride Tilt",
+          "type": "slider",
+          "help": "<font size=\"15\">View tilts left/right with each stride (degrees). View only. Default 0.75.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 8,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fCycleHz:BobJog",
+          "text": "Stride Rhythm",
+          "type": "slider",
+          "help": "<font size=\"15\">Full left+right strides per second. Default 1.65.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.3,
+            "max": 3,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fStepImpact:BobJog",
+          "text": "Footstep Impact",
+          "type": "slider",
+          "help": "<font size=\"15\">Size of the sharp kick each time a foot lands while jogging. 0 = off. Default 1.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 12,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fBreathAmp:BobJog",
+          "text": "Breathing",
+          "type": "slider",
+          "help": "<font size=\"15\">How deep your breathing is while jogging. Blends with the pace either side of it, and down to Breathing (Standing) as you stop. Default 0.55.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 3,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fBreathHz:BobJog",
+          "text": "Breathing Rate",
+          "type": "slider",
+          "help": "<font size=\"15\">Breaths per second while jogging. Default 0.85.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.05,
+            "max": 3,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Sprinting",
+          "type": "section"
+        },
+        {
+          "id": "fVertical:BobSprint",
+          "text": "Bounce",
+          "type": "slider",
+          "help": "<font size=\"15\">How big the up/down footstep bounce is while sprinting. Default 7.0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 12,
+            "step": 0.1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLateral:BobSprint",
+          "text": "Side Shift",
+          "type": "slider",
+          "help": "<font size=\"15\">Left-right weight shift while sprinting (a slide; subtle on its own). Default 5.0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 8,
+            "step": 0.1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fSwayYawDeg:BobSprint",
+          "text": "Stride Swing",
+          "type": "slider",
+          "help": "<font size=\"15\">View swings left/right with each stride (degrees). View only, never the gun or your aim. Default 1.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 5,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fSwayRollDeg:BobSprint",
+          "text": "Stride Tilt",
+          "type": "slider",
+          "help": "<font size=\"15\">View tilts left/right with each stride (degrees). View only. Default 2.3.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 8,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fCycleHz:BobSprint",
+          "text": "Stride Rhythm",
+          "type": "slider",
+          "help": "<font size=\"15\">Full left+right strides per second. Default 1.75.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.3,
+            "max": 3,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fStepImpact:BobSprint",
+          "text": "Footstep Impact",
+          "type": "slider",
+          "help": "<font size=\"15\">Size of the sharp kick each time a foot lands while sprinting. 0 = off. Default 3.0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 12,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fBreathAmp:BobSprint",
+          "text": "Breathing",
+          "type": "slider",
+          "help": "<font size=\"15\">How deep your breathing is while sprinting. Blends with the pace either side of it, and down to Breathing (Standing) as you stop. Default 0.9.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 3,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fBreathHz:BobSprint",
+          "text": "Breathing Rate",
+          "type": "slider",
+          "help": "<font size=\"15\">Breaths per second while sprinting. Default 1.4.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.05,
+            "max": 3,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Standing Still",
+          "type": "section"
+        },
+        {
+          "id": "fBreathAmp:Bob",
+          "text": "Breathing (Standing)",
+          "type": "slider",
+          "help": "<font size=\"15\">How deep your breathing is when you are not moving. Default 0.35.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 3,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fBreathHz:Bob",
+          "text": "Breathing Rate (Standing)",
+          "type": "slider",
+          "help": "<font size=\"15\">Breaths per second when standing still. Default 0.3.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.05,
+            "max": 1.5,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Jumping & Landing",
+          "type": "section"
+        },
+        {
+          "id": "bJumpLand:Toggles",
+          "text": "Enable Jumping & Landing",
+          "type": "switcher",
+          "help": "<font size=\"15\">Off: no jump dip or landing kick. For landing or fall camera mods.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "fLaunchDip:Jump",
+          "text": "Launch Dip",
+          "type": "slider",
+          "help": "<font size=\"15\">How far you load down through the legs as you push off. Off by default - the dip cannot be anticipated, so it fires as you leave the ground. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLaunchRate:Jump",
+          "text": "Launch Recovery Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How quickly you extend back up out of the push-off. Higher is a snappier take-off. Default 6.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.5,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLandImpact:Jump",
+          "text": "Landing Ring",
+          "type": "slider",
+          "help": "<font size=\"15\">An extra bouncing kick on landing, on top of the knee bend. Legs do not bounce, so this is off by default. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLandShakeDeg:Jump",
+          "text": "Landing Shake",
+          "type": "slider",
+          "help": "<font size=\"15\">Degrees of camera shake when you land. View only, so it never moves your aim. Default 0.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 5,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLandCrouch:Jump",
+          "text": "Landing Knee Bend",
+          "type": "slider",
+          "help": "<font size=\"15\">How deep you bend to absorb the landing. This is the main landing movement. Default 6.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 25,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLandCrouchRate:Jump",
+          "text": "Landing Recovery Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How slowly you straighten back up. Lower is heavier and more laboured. Default 1.8.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.3,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLandGunDip:Jump",
+          "text": "Landing Weapon Dip",
+          "type": "slider",
+          "help": "<font size=\"15\">Extra drop on the weapon and hands as you land, on top of the view. This is what makes your hands visibly take the hit. Default 4.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 60,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLandRefSpeed:Jump",
+          "text": "Full-Force Landing Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">The falling speed that counts as a full-force landing. Slower falls scale down from it. Default 700.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 200,
+            "max": 2000,
+            "step": 25,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHz:Jump",
+          "text": "Jump Sharpness",
+          "type": "slider",
+          "help": "<font size=\"15\">How fast the launch and landing kicks ring. Lower is a slower, heavier swell. Default 2.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.5,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fDecay:Jump",
+          "text": "Jump Fade",
+          "type": "slider",
+          "help": "<font size=\"15\">How quickly they die away. Lower lets the landing ride longer. Default 4.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fMinAirTime:Jump",
+          "text": "Minimum Air Time",
+          "type": "slider",
+          "help": "<font size=\"15\">Hops shorter than this get no landing kick, so stairs and kerbs stay quiet. Default 0.15.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1,
+            "step": 0.01,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Footstep Impact Shape (all paces)",
+          "type": "section"
+        },
+        {
+          "id": "bStepImpact:Toggles",
+          "text": "Enable Footstep Impact",
+          "type": "switcher",
+          "help": "<font size=\"15\">Off: no kick when a foot lands.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "fStepImpactHz:Bob",
+          "text": "Impact Sharpness",
+          "type": "slider",
+          "help": "<font size=\"15\">How fast the footstep kick rings - higher is snappier and harder, lower is a slower, softer swell. Default 4.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 30,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fStepImpactDecay:Bob",
+          "text": "Impact Fade",
+          "type": "slider",
+          "help": "<font size=\"15\">How quickly the footstep kick dies away - higher is a shorter, tighter thud, lower lets it ride longer. Default 8.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 40,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "Advanced",
+      "content": [
+        {
+          "text": "<font size=\"15\">Fine-tuning. The defaults are the tested values - change with care.</font>",
+          "type": "text",
+          "html": true
+        },
+        {
+          "text": "Pace Thresholds - these do NOT change how fast you move",
+          "type": "section"
+        },
+        {
+          "text": "<textformat leftmargin=\"48\"><font size=\"15\">Bodycam never changes your movement speed. These are the speeds the game reports, and they decide which pace's bob applies. To move faster or slower, use a movement mod.</font></textformat>",
+          "type": "text",
+          "html": true
+        },
+        {
+          "id": "fSpeed:BobWalk",
+          "text": "Counts As Walking At",
+          "type": "slider",
+          "help": "<font size=\"15\">Movement speed at which the Walking bob settings are fully applied. Below it they fade towards standing still. Default 130.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 20,
+            "max": 400,
+            "step": 5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fSpeed:BobJog",
+          "text": "Counts As Jogging At",
+          "type": "slider",
+          "help": "<font size=\"15\">Movement speed at which the Jogging bob settings are fully applied; between this and the walking figure the two blend. A typical vanilla jog is around 300-450. Default 340.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 100,
+            "max": 700,
+            "step": 5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fSpeed:BobSprint",
+          "text": "Counts As Sprinting At",
+          "type": "slider",
+          "help": "<font size=\"15\">Movement speed at which the Sprinting bob settings are fully applied. A typical vanilla sprint is around 500-670. Default 540.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 200,
+            "max": 1000,
+            "step": 5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Walls (while aiming)",
+          "type": "section"
+        },
+        {
+          "id": "bRetract:Toggles",
+          "text": "Enable Gun Retract",
+          "type": "switcher",
+          "help": "<font size=\"15\">Off: the gun does not pull back at walls. For weapon collision mods.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "fStart:Retract",
+          "text": "Gun Retract Start Distance",
+          "type": "slider",
+          "help": "<font size=\"15\">Gun starts pulling back when a wall is this close. Default 70.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 20,
+            "max": 150,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fFull:Retract",
+          "text": "Gun Fully Retracted Distance",
+          "type": "slider",
+          "help": "<font size=\"15\">Gun is fully pulled back at this distance. Default 18.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 80,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fBack:Retract",
+          "text": "Retract Pull Back",
+          "type": "slider",
+          "help": "<font size=\"15\">How far the gun pulls toward you. Default 14.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 40,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fDrop:Retract",
+          "text": "Retract Drop",
+          "type": "slider",
+          "help": "<font size=\"15\">How far the gun lowers. Default 6.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 30,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPitchDeg:Retract",
+          "text": "Retract Muzzle Down",
+          "type": "slider",
+          "help": "<font size=\"15\">Muzzle tips down this many degrees. Default 22.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 60,
+            "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Stance",
+          "type": "section"
+        },
+        {
+          "id": "bFirstPersonOnly:Stance",
+          "text": "First-Person Camera Only",
+          "type": "switcher",
+          "help": "<font size=\"15\">Fade the effect out whenever the game is driving the camera itself - dialogue, VATS, furniture, bleedout. Turn off only if the mod goes quiet during normal play.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "bSuspendInMenus:Stance",
+          "text": "Pause In Menus",
+          "type": "switcher",
+          "help": "<font size=\"15\">Fade the effect out while the pause menu, settlement build mode (Workshop) or the Pip-Boy (unless Keep Running In Pip-Boy is on) is open. Default on.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "fPowerArmorScale:Stance",
+          "text": "Power Armor Motion",
+          "type": "slider",
+          "help": "<font size=\"15\">Motion strength while piloting power armor, which already has heavy camera motion of its own. 1 = same as on foot. Default 0.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1.5,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fAirborneBobScale:Stance",
+          "text": "Airborne Bob",
+          "type": "slider",
+          "help": "<font size=\"15\">How much footstep bob keeps playing while you are off the ground (jumps, falls, knockback). 0 = none, which is what stops the floating feel. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Direction Fixes (1 or -1)",
+          "type": "section"
+        },
+        {
+          "id": "fCant:Signs",
+          "text": "Gun Lean Direction",
+          "type": "slider",
+          "help": "<font size=\"15\">Set to -1 if the gun leans the wrong way.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -1,
+            "max": 1,
+            "step": 2,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "text": "Keys (Windows key codes)",
+          "type": "section"
+        },
+        {
+          "id": "iAim:Keys",
+          "text": "Aim Key",
+          "type": "slider",
+          "help": "<font size=\"15\">Virtual-key code for aim (used by wall/corner features). 2 = right mouse. Default 2.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 254,
+            "step": 1,
+            "sourceType": "ModSettingInt"
+          }
+        },
+        {
+          "id": "iLeft:Keys",
+          "text": "Strafe Left Key",
+          "type": "slider",
+          "help": "<font size=\"15\">Virtual-key code. 65 = A. Default 65.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 254,
+            "step": 1,
+            "sourceType": "ModSettingInt"
+          }
+        },
+        {
+          "id": "iRight:Keys",
+          "text": "Strafe Right Key",
+          "type": "slider",
+          "help": "<font size=\"15\">Virtual-key code. 68 = D. Default 68.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 254,
+            "step": 1,
+            "sourceType": "ModSettingInt"
+          }
+        },
+        {
+          "text": "Troubleshooting",
+          "type": "section"
+        },
+        {
+          "id": "bViewMotion:Debug",
+          "text": "View Motion",
+          "type": "switcher",
+          "help": "<font size=\"15\">Turn off all camera motion (lag, lean, bob, sway) to isolate a problem.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "bGunMotion:Debug",
+          "text": "Gun Motion",
+          "type": "switcher",
+          "help": "<font size=\"15\">Turn off all gun motion (lean, resting tilt, drag, retract) to isolate a problem, e.g. if one-frame glitches appear with frame generation.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "bFixMotionVectors:Debug",
+          "text": "Fix Gun Motion Vectors",
+          "type": "switcher",
+          "help": "<font size=\"15\">Keeps the weapon's motion vectors consistent with the motion this mod adds. Turn off only to check whether it is responsible for ghosting or smearing under DLSS, FSR or frame generation.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "bAimCrosshair:Debug",
+          "text": "Show Aim Marker In Sights",
+          "type": "switcher",
+          "help": "<font size=\"15\">Testing aid: keeps the crosshair visible while aiming and puts it exactly where the shot will land, so you can check it against the sight picture. Default off.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "bLog:Debug",
+          "text": "Write Log",
+          "type": "switcher",
+          "help": "<font size=\"15\">Writes Data\\F4SE\\Plugins\\Bodycam.log for troubleshooting.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "fBlendInRate:Debug",
+          "text": "Fade In Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How fast motion fades in after entering first person or re-enabling. Default 4.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.5,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        }
+      ]
+    }
+  ]
+}
