@@ -2,7 +2,7 @@
 
 by **AverageBENNAL**
 
-Bodycam-style first person for Fallout 4, Anniversary Edition and Old-Gen.
+Bodycam-style first person for Fallout 4, Anniversary Edition, Next-Gen and Old-Gen.
 
 - The gun leads and the view catches up (the view trails your real aim on a spring; shots still go where the gun points).
 - Camera and gun lean into mouse turns; the gun rests at a slight natural tilt.
@@ -16,6 +16,7 @@ Bodycam-style first person for Fallout 4, Anniversary Edition and Old-Gen.
 One of:
 
 - **Anniversary Edition** - Fallout 4 1.11.240 with F4SE 0.7.9
+- **Next-Gen** - Fallout 4 1.10.984 with F4SE 0.7.2
 - **Old-Gen** - Fallout 4 1.10.163 with F4SE 0.6.23
 
 plus:
@@ -23,7 +24,7 @@ plus:
 - Mod Configuration Menu (MCM)
 - Microsoft Visual C++ 2015-2022 Redistributable (x64)
 
-Both builds come from one source tree and are selected in the installer. Each
+All three builds come from one source tree and are selected in the installer. Each
 DLL only loads on its own F4SE, so the wrong choice fails safely rather than
 misbehaving.
 

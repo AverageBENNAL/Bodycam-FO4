@@ -34,7 +34,7 @@ extern "C"
 	// Old-gen F4SE (0.6.x) asks every plugin whether it supports this runtime before loading it.
 	// Each build hardcodes one exe's addresses, so refuse anything but 1.10.163 - the wrong build
 	// then simply doesn't load instead of patching random memory. (F4SE 0.7.x never loads this
-	// DLL: it requires F4SEPlugin_Version, which only the AE build exports.)
+	// DLL: it requires F4SEPlugin_Version, which only the AE and NG builds export.)
 	__declspec(dllexport) bool F4SEPlugin_Query(const F4SEInterface* f4se, PluginInfo* info)
 	{
 		info->infoVersion = PluginInfo::kInfoVersion;
@@ -59,8 +59,13 @@ extern "C"
 		"AverageBENNAL",
 
 		0, // addressIndependence: we use hardcoded (RE-derived) addresses, not runtime signature scanning
+#if defined(BODYCAM_NG)
+		F4SEPluginVersionData::kStructureIndependence_1_10_980Layout,
+		{ kRuntimeVersion_1_10_984, 0 },
+#else
 		F4SEPluginVersionData::kStructureIndependence_1_11_137Layout,
 		{ kRuntimeVersion_1_11_240, 0 },
+#endif
 
 		0,
 	};
@@ -73,6 +78,9 @@ extern "C"
 		Logger::Get().Init(g_selfModule);
 #if defined(BODYCAM_OG)
 		CP_LOG("Bodycam %s loading (Old-Gen build, 1.10.163), compiled %s %s. F4SE runtime version = 0x%08X",
+			BODYCAM_VERSION, __DATE__, __TIME__, f4se->runtimeVersion);
+#elif defined(BODYCAM_NG)
+		CP_LOG("Bodycam %s loading (NG build, 1.10.984), compiled %s %s. F4SE runtime version = 0x%08X",
 			BODYCAM_VERSION, __DATE__, __TIME__, f4se->runtimeVersion);
 #else
 		CP_LOG("Bodycam %s loading (AE build, 1.11.240), compiled %s %s. F4SE runtime version = 0x%08X",

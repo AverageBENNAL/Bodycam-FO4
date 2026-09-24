@@ -59,6 +59,9 @@ struct F4SEPluginVersionData
 // Fallout4.exe v1.11.240, in F4SE's packed-version encoding.
 constexpr UInt32 kRuntimeVersion_1_11_240 = 0x010B0F00;
 
+// Fallout4.exe v1.10.984 (next-gen), F4SE 0.7.2. Same plugin interface as 1.11.240.
+constexpr UInt32 kRuntimeVersion_1_10_984 = 0x010A3D80;
+
 // Fallout4.exe v1.10.163 (old-gen). F4SE 0.6.x
 // predates F4SEPlugin_Version and loads plugins through F4SEPlugin_Query instead.
 constexpr UInt32 kRuntimeVersion_1_10_163 = 0x010A0A30;

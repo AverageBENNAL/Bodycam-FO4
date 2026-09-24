@@ -5,7 +5,7 @@
   "pluginRequirements": [],
   "content": [
     {
-      "text": "<font size=\"24\"><b>Bodycam</b></font> <font size=\"18\">v1.0.6</font>",
+      "text": "<font size=\"24\"><b>Bodycam</b></font> <font size=\"18\">v1.0.7</font>",
       "type": "text",
       "html": true
     },
@@ -49,6 +49,16 @@
               "Default (x1.0)",
               "Intense (x1.5)"
             ]
+          }
+        },
+        {
+          "id": "bNoSideMotion:Bob",
+          "text": "Motion Sickness Mode",
+          "type": "switcher",
+          "help": "<font size=\"15\">For anyone who gets motion sick. Camera lean, corner peek tilt and resting tilt drop to a quarter, footstep roll and all side-to-side walking sway are removed, and landing shake, recoil camera kick and the Free Aim view overshoot are halved. Default off.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
           }
         },
         {
@@ -224,6 +234,16 @@
           }
         },
         {
+          "id": "bFreeAimDrawnOnly:Look",
+          "text": "Only With Weapon Drawn",
+          "type": "switcher",
+          "help": "<font size=\"15\">Free Aim switches off while your weapon is holstered, so exploring has no drifting view or recentering. It eases back in as you draw. Default on.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
           "text": "Accuracy",
           "type": "section"
         },
@@ -374,6 +394,16 @@
             "max": 15,
             "step": 0.5,
             "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "bLowReadyShotRaised:Hold",
+          "text": "First Shot Hits From Low",
+          "type": "switcher",
+          "help": "<font size=\"15\">On: shots fired while the gun is still coming up out of the low ready go where the raised gun will point. Off: they follow the lowered barrel and usually miss, as a real gun would. Default on.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
           }
         },
         {
@@ -1269,7 +1299,7 @@
           "id": "fLagMaxDeg:Look",
           "text": "Max View Lag",
           "type": "slider",
-          "help": "<font size=\"15\">How far (degrees) the view can trail behind the gun when you turn. 0 disables the lag - including Screen Float, which this also caps. Default 9.</font>",
+          "help": "<font size=\"15\">How far (degrees) the view can trail behind the gun when you turn. 0 disables the lag - including Screen Float, which this also caps. Default 10.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
@@ -1282,7 +1312,7 @@
           "id": "fLagFreq:Look",
           "text": "Catch-up Speed",
           "type": "slider",
-          "help": "<font size=\"15\">How quickly the view catches up to the gun. Lower = lazier. Default 14.</font>",
+          "help": "<font size=\"15\">How quickly the view catches up to the gun. Lower = lazier. Default 7.5.</font>",
           "html": true,
           "valueOptions": {
             "min": 2,
@@ -1295,7 +1325,7 @@
           "id": "fLagDamping:Look",
           "text": "Catch-up Smoothness",
           "type": "slider",
-          "help": "<font size=\"15\">Below 1 overshoots slightly for an organic feel; 1 = no overshoot. With Free Aim on this shapes the Screen Float bounce. Default 0.6.</font>",
+          "help": "<font size=\"15\">Below 1 overshoots slightly for an organic feel; 1 = no overshoot. With Free Aim on this shapes the Screen Float bounce. Default 0.65.</font>",
           "html": true,
           "valueOptions": {
             "min": 0.3,
@@ -1325,7 +1355,7 @@
           "id": "fDeadzoneRadS:Turn",
           "text": "Lean Deadzone",
           "type": "slider",
-          "help": "<font size=\"15\">Slow turning below this is ignored, so small mouse movements don't tilt anything. Raise it if the gun drifts while you make fine aim adjustments. Default 0.12.</font>",
+          "help": "<font size=\"15\">Slow turning below this is ignored, so small mouse movements don't tilt anything. Raise it if the gun drifts while you make fine aim adjustments. Default 0.1.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
@@ -1415,7 +1445,7 @@
           "id": "fTurnDegPerRadS:Roll",
           "text": "Lean Into Turns",
           "type": "slider",
-          "help": "<font size=\"15\">Camera tilt per unit of turning speed. - leans out of the turn (what real bodycams do), + leans into it, 0 = no lean from turning. Default -2.</font>",
+          "help": "<font size=\"15\">Camera tilt per unit of turning speed. - leans out of the turn (what real bodycams do), + leans into it, 0 = no lean from turning. Default -3.</font>",
           "html": true,
           "valueOptions": {
             "min": -8,
@@ -1428,7 +1458,7 @@
           "id": "fMaxDeg:Roll",
           "text": "Max Camera Lean",
           "type": "slider",
-          "help": "<font size=\"15\">Largest camera tilt in degrees. Default 4.</font>",
+          "help": "<font size=\"15\">Largest camera tilt in degrees. Default 5.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
@@ -1445,7 +1475,7 @@
           "id": "bGunLean:Toggles",
           "text": "Enable Gun Lean",
           "type": "switcher",
-          "help": "<font size=\"15\">Off: no gun tilt from turning, strafing or resting tilt. For weapon sway or inertia mods.</font>",
+          "help": "<font size=\"15\">Off: no gun tilt from turning, strafing, weapon inertia or resting tilt. For weapon sway or inertia mods.</font>",
           "html": true,
           "valueOptions": {
             "sourceType": "ModSettingBool"
@@ -1520,7 +1550,7 @@
           "id": "fFollowViewRoll:GunMotion",
           "text": "Gun Follows Camera Lean",
           "type": "slider",
-          "help": "<font size=\"15\">Gun lean = this x camera lean + extra cant. Negative leans the gun against the camera. Default 1.5.</font>",
+          "help": "<font size=\"15\">Gun lean = this x camera lean + extra cant. Lower keeps the gun steadier so the camera lean shows more. Default 0.5.</font>",
           "html": true,
           "valueOptions": {
             "min": -3,
@@ -1550,12 +1580,25 @@
           "id": "fRate:Roll",
           "text": "Camera Lean Speed",
           "type": "slider",
-          "help": "<font size=\"15\">How fast camera lean follows your turning. Default 5.</font>",
+          "help": "<font size=\"15\">How fast the camera leans into a turn. Default 5.</font>",
           "html": true,
           "valueOptions": {
             "min": 1,
             "max": 20,
             "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fReturnRate:Roll",
+          "text": "Camera Lean Return Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How fast the lean settles back upright once you stop turning. Lower holds the tilt longer. Default 1.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.3,
+            "max": 20,
+            "step": 0.1,
             "sourceType": "ModSettingFloat"
           }
         },
@@ -1687,7 +1730,7 @@
           "id": "fDrop:CornerCamera",
           "text": "Corner: Camera Drop",
           "type": "slider",
-          "help": "<font size=\"15\">How far the view lowers as you lean out, like leaning from the hips. 0 = straight sideways. Default 8.</font>",
+          "help": "<font size=\"15\">How far the view lowers as you lean out, like leaning from the hips. 0 = straight sideways. Default 0.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
@@ -1830,7 +1873,7 @@
           "id": "fRate:CornerGun",
           "text": "Corner: Gun Lean Speed",
           "type": "slider",
-          "help": "<font size=\"15\">How fast the gun swings out around the corner. Lower is a slower, heavier lean. Default 3.</font>",
+          "help": "<font size=\"15\">How fast the gun swings out around the corner. Lower is a slower, heavier lean. Default 4.5.</font>",
           "html": true,
           "valueOptions": {
             "min": 1,
@@ -1856,7 +1899,20 @@
           "id": "fRate:CornerCamera",
           "text": "Corner: Camera Lean Speed",
           "type": "slider",
-          "help": "<font size=\"15\">How fast the view follows around the corner. Keep it below the gun speed so the gun leads. Default 3.</font>",
+          "help": "<font size=\"15\">How fast the view follows around the corner. Keep it below the gun speed so the gun leads. Default 4.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 1,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fReturnRate:CornerCamera",
+          "text": "Corner: Return Speed",
+          "type": "slider",
+          "help": "<font size=\"15\">How fast the view and gun come back into cover when the peek ends. Default 6.</font>",
           "html": true,
           "valueOptions": {
             "min": 1,
@@ -1901,7 +1957,7 @@
           "id": "fLookInertiaMax:GunMotion",
           "text": "Max Inertia",
           "type": "slider",
-          "help": "<font size=\"15\">Largest the inertia swing can get, in degrees, however fast you spin. Default 12.</font>",
+          "help": "<font size=\"15\">Largest the inertia swing can get, in degrees, however fast you spin. Default 6.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
@@ -1953,7 +2009,7 @@
           "id": "fLookInertiaDamping:GunMotion",
           "text": "Inertia Smoothness",
           "type": "slider",
-          "help": "<font size=\"15\">Below 1 the gun settles slightly past centre before coming to rest, which reads as organic rather than sprung. 1 = no overshoot. Default 0.6.</font>",
+          "help": "<font size=\"15\">Below 1 the gun settles slightly past centre before coming to rest, which reads as organic rather than sprung. 1 = no overshoot. Default 0.85.</font>",
           "html": true,
           "valueOptions": {
             "min": 0.3,
@@ -2046,10 +2102,23 @@
           "id": "bEnabled:Recoil",
           "text": "Enable Recoil",
           "type": "switcher",
-          "help": "<font size=\"15\">Bodycam's own recoil, on top of whatever the weapon already does. Off = vanilla recoil only.</font>",
+          "help": "<font size=\"15\">Bodycam's own recoil. Off = vanilla recoil only, at full strength.</font>",
           "html": true,
           "valueOptions": {
             "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "fVanillaRecoil:Recoil",
+          "text": "Vanilla Recoil",
+          "type": "slider",
+          "help": "<font size=\"15\">How much of the weapon's own recoil is kept alongside Bodycam's. The two stack, so at 1 every shot kicks twice. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
           }
         },
         {
@@ -2438,23 +2507,13 @@
           "id": "fMoveMotion:Bob",
           "text": "Movement Motion",
           "type": "slider",
-          "help": "<font size=\"15\">All the movement motion at once - bounce, side shift, stride swing and tilt, and the footstep kick, at every pace. 0 removes the lot and leaves the camera steady while you move. Default 1.</font>",
+          "help": "<font size=\"15\">All the movement motion at once - bounce, side shift, stride swing and tilt, and the footstep kick, at every pace. 0 removes the lot and leaves the camera steady while you move. Default 0.65.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
             "max": 2,
             "step": 0.05,
             "sourceType": "ModSettingFloat"
-          }
-        },
-        {
-          "id": "bNoSideMotion:Bob",
-          "text": "Motion Sickness Mode",
-          "type": "switcher",
-          "help": "<font size=\"15\">Removes all side-to-side movement at every pace. Bounce, footstep impact and breathing are left alone. Default off.</font>",
-          "html": true,
-          "valueOptions": {
-            "sourceType": "ModSettingBool"
           }
         },
         {
@@ -2491,7 +2550,7 @@
           "id": "fSwayYawDeg:BobWalk",
           "text": "Stride Swing",
           "type": "slider",
-          "help": "<font size=\"15\">View swings left/right with each stride (degrees). View only, never the gun or your aim. Default 0.5.</font>",
+          "help": "<font size=\"15\">View swings left/right with each stride (degrees). View only, never the gun or your aim. Default 0.3.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
@@ -2504,7 +2563,7 @@
           "id": "fSwayRollDeg:BobWalk",
           "text": "Stride Tilt",
           "type": "slider",
-          "help": "<font size=\"15\">View tilts left/right with each stride (degrees). View only. Default 0.6.</font>",
+          "help": "<font size=\"15\">View tilts left/right with each stride (degrees). View only. Default 0.3.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
@@ -2599,7 +2658,7 @@
           "id": "fSwayYawDeg:BobJog",
           "text": "Stride Swing",
           "type": "slider",
-          "help": "<font size=\"15\">View swings left/right with each stride (degrees). View only, never the gun or your aim. Default 0.65.</font>",
+          "help": "<font size=\"15\">View swings left/right with each stride (degrees). View only, never the gun or your aim. Default 0.45.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
@@ -2612,7 +2671,7 @@
           "id": "fSwayRollDeg:BobJog",
           "text": "Stride Tilt",
           "type": "slider",
-          "help": "<font size=\"15\">View tilts left/right with each stride (degrees). View only. Default 0.75.</font>",
+          "help": "<font size=\"15\">View tilts left/right with each stride (degrees). View only. Default 0.45.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
@@ -2707,7 +2766,7 @@
           "id": "fSwayYawDeg:BobSprint",
           "text": "Stride Swing",
           "type": "slider",
-          "help": "<font size=\"15\">View swings left/right with each stride (degrees). View only, never the gun or your aim. Default 1.5.</font>",
+          "help": "<font size=\"15\">View swings left/right with each stride (degrees). View only, never the gun or your aim. Default 0.85.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
@@ -2720,7 +2779,7 @@
           "id": "fSwayRollDeg:BobSprint",
           "text": "Stride Tilt",
           "type": "slider",
-          "help": "<font size=\"15\">View tilts left/right with each stride (degrees). View only. Default 2.3.</font>",
+          "help": "<font size=\"15\">View tilts left/right with each stride (degrees). View only. Default 0.85.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
@@ -3250,6 +3309,19 @@
           "html": true,
           "valueOptions": {
             "min": 1,
+            "max": 254,
+            "step": 1,
+            "sourceType": "ModSettingInt"
+          }
+        },
+        {
+          "id": "iLowReadyToggle:Keys",
+          "text": "Low Ready Toggle Key",
+          "type": "slider",
+          "help": "<font size=\"15\">Tap to keep the gun raised out of the low ready, tap again to let it drop. Shooting and aiming still raise it as usual. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
             "max": 254,
             "step": 1,
             "sourceType": "ModSettingInt"

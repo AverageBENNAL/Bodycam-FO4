@@ -70,6 +70,7 @@ struct Config
 	float lowReadyDelay     = 0.8f;  // seconds after your last shot before the gun lowers again
 	float lowReadyRaiseRate = 12.0f; // how fast it comes up when you shoot / aim
 	float lowReadyLowerRate = 1.0f;  // how slowly it settles back down
+	bool  lowReadyShotRaised = true;  // shots fired while still coming up go where the raised gun will point
 	float holdBlendRate     = 12.0f;  // hip <-> sights and weapon-swap blending
 	// Share of Iron Sights Distance and Sights FOV Change a scoped gun gets. Pushed out the full
 	// distance, the scope sits so far from the eye that the picture through it shrinks to a dot.
@@ -98,6 +99,7 @@ struct Config
 	// How much of the kick moves your REAL point of aim. This is the balance-affecting part:
 	// bullets follow it, so sustained fire climbs and has to be controlled. 0 = purely visual.
 	float recoilAimShare   = 0.40f;
+	float vanillaRecoil    = 0.0f;  // scales the weapon's own aim-model kick; 1 = vanilla, 0 = none
 	float recoilGunKick    = 1.00f; // extra visual kick on the weapon, on top of the aim
 	float recoilCameraKick = 0.34f; // extra kick on the view, through its own spring
 	float recoilAdsScale   = 0.63f; // all impulses x this while aiming (a braced weapon moves less)
@@ -130,11 +132,12 @@ struct Config
 	float recoilMaxYaw     = 8.0f;
 
 	// ---- Look: the rendered view trails your real aim on a spring ------------------------------
-	float lagMaxDeg  = 9.0f;
-	float lagFreq    = 14.0f;
-	float lagDamping = 0.6f;
+	float lagMaxDeg  = 10.0f;
+	float lagFreq    = 7.5f;
+	float lagDamping = 0.65f;
 	// Free-aim box: the gun roams inside it, the view turns only at its edge.
 	bool  freeAim         = true;
+	bool  freeAimDrawnOnly = true; // holstered, the box only drifted the view around (motion sickness report, 1.0.6)
 	float freeAimYawDeg   = 3.5f;  // half-width of the box (MEASURED off Bodycam footage)
 	float freeAimPitchDeg = 2.2f;  // half-height of the box (MEASURED)
 	float freeAimRecenter = 1.2f;  // per second; 0 = the gun stays where you left it
@@ -151,14 +154,14 @@ struct Config
 	// Both leans used to be linear in turn rate and then hard-clamped, so anyone who turns quickly
 	// - high mouse DPI, high in-game sensitivity - lived on the clamp and the gun snapped between
 	// the two rails. The response now eases into the limit instead (see SoftLimit).
-	float turnDeadzone   = 0.12f; // rad/s of turning ignored, so mouse jitter can't drive the lean
+	float turnDeadzone   = 0.10f; // rad/s of turning ignored, so mouse jitter can't drive the lean
 	float turnSensitivity = 1.0f; // scales how much turning it takes to lean; lower = calmer
 
 	// ---- Camera lean (into mouse turns) ------------------------------------------------------------
-	float rollTurn   = -2.0f; // degrees per rad/s of turning; - leans out of the turn (bodycam-like)
+	float rollTurn   = -3.0f; // degrees per rad/s of turning; - leans out of the turn (bodycam-like)
 	bool  strafeTilt = true;  // camera leans on strafes (gun unaffected)
 	float rollStrafe = -2.0f;  // degrees at full strafe speed (0 = turning only)
-	float rollMaxDeg = 4.0f;
+	float rollMaxDeg = 5.0f;
 	bool  cameraTilt = true;  // master on/off for all camera tilt (turn lean, bob roll, stride tilt)
 	float cameraTiltDeg = 1.0f;  // resting camera tilt: + = right, - = left, 0 = level
 	// The camera works its way to one side, sits there, then settles the other way - average
@@ -166,15 +169,16 @@ struct Config
 	float tiltAlternate = 25.0f;
 	float tiltDriftRate = 0.35f; // how slowly it eases across when it does change sides
 	float rollRate   = 5.0f;
+	float rollReturnRate = 1.5f; // settling back once the turn stops; 5 (= rollRate) snapped upright in ~0.2 s
 
 	// ---- Breathing / bob roll -------------------------------------------------------------------
-	// Motion sickness: drops every side-to-side component of the movement motion - the lateral
+	// Motion Sickness Mode (General page): drops every side-to-side component of the movement motion - the lateral
 	// weight shift and the stride swing/tilt, at every pace. Up-and-down bounce, footstep impact
 	// and breathing are untouched, because it is the horizontal rocking that triggers it.
 	bool  noSideMotion = false;
 	// One knob over ALL of the movement motion: bounce, side shift, stride swing/tilt and the
 	// footstep kick, at every pace. 0 removes the lot without hunting through fifteen sliders.
-	float moveMotion = 1.0f;
+	float moveMotion = 0.65f;
 	float bobRollDeg = 0.5f;
 	// 1.0.5: a short damped kick each time a foot lands (the bottom of the bounce). Its SIZE is
 	// per-gait (below) - a walk should not land like a sprint; these two shape every kick.
@@ -219,12 +223,13 @@ struct Config
 	// Stride TILT was measured off Bodycam movement footage at 2.18 deg of camera roll (5-95 spread)
 	// at a walk and 5.94 at a jog, i.e. an amplitude of ~1.1 and ~3 - ours was 0.25. That shortfall
 	// is what read as the movement not being lofty enough. Swing and rhythm already matched.
-	Gait walk   { 130.0f, 1.8f, 0.5f, 0.90f, 0.50f, 0.6f,  1.0f, 0.40f, 0.45f };
-	Gait jog    { 340.0f, 4.0f, 1.0f, 1.65f, 0.65f, 0.75f, 1.5f, 0.55f, 0.85f };
-	Gait sprint { 540.0f, 7.0f, 5.0f, 1.75f, 1.5f,  2.3f,  3.0f, 0.90f, 1.40f };
+	// Swing and tilt lowered in 1.0.7 (tuned in game): comfortable for long sessions beat the footage match.
+	Gait walk   { 130.0f, 1.8f, 0.5f, 0.90f, 0.30f, 0.30f, 1.0f, 0.40f, 0.45f };
+	Gait jog    { 340.0f, 4.0f, 1.0f, 1.65f, 0.45f, 0.45f, 1.5f, 0.55f, 0.85f };
+	Gait sprint { 540.0f, 7.0f, 5.0f, 1.75f, 0.85f, 0.85f, 3.0f, 0.90f, 1.40f };
 
 	// ---- Gun lean + motion --------------------------------------------------------------------
-	float gunFollowRoll  = 1.5f;  // gun lean = this x camera lean + extra cant
+	float gunFollowRoll  = 0.5f;  // gun lean = this x camera lean + extra cant. 1.5 moved the gun with the view so much the lean hardly showed drawn
 	float cantTurn       = 3.1f;  // extra gun cant per rad/s of turning
 	float cantStrafe     = 4.5f;
 	float cantMaxDeg     = 7.0f;
@@ -238,11 +243,12 @@ struct Config
 	// Separate from `inertia` below, which is a strafe-driven positional drag and does nothing
 	// when you only turn the view.
 	float lookInertia        = 8.0f; // degrees of swing per rad/s of mouse look
-	float lookInertiaMax     = 12.0f; // largest swing, degrees
+	float lookInertiaMax     = 6.0f;  // largest swing, degrees. 12 in 1.0.6 took a second to settle
+	                                  // and moved the sights off target while aiming
 	float lookInertiaRate    = 5.0f; // spring frequency: how fast it catches up and settles
 	float lookInertiaCant    = 1.25f; // degrees of cant per degree of swing
 	float lookInertiaSlide   = 1.25f; // game units of slide per degree of swing
-	float lookInertiaDamping = 0.6f; // below 1 it settles past centre, which feels organic
+	float lookInertiaDamping = 0.85f; // below 1 it settles past centre; 0.6 overshot enough to fight aiming
 	float inertia        = 0.075f;
 	float inertiaMax     = 8.0f;
 	float inertiaRate    = 15.0f;
@@ -294,14 +300,15 @@ struct Config
 	float gunPeekDist = 65.0f;
 	float gunYawDeg   = 6.0f;
 	float gunCantDeg  = 8.0f;
-	float gunRate     = 3.0f;   // spring FREQUENCY since 1.0.6, not an exponential rate
+	float gunRate     = 4.5f;   // spring FREQUENCY since 1.0.6, not an exponential rate. 3 crept out for 2 s
 	float gunPeekDamping = 0.8f; // 1 = swings out and settles without overshooting
 	float camPeekDist = 60.0f;
 	float camRollDeg  = 10.0f;
-	float camRate     = 3.0f;
-	float camPeekDamping = 1.0f;
+	float camRate     = 4.0f;
+	float camPeekDamping = 0.85f; // 1 reached 80% in a second, then crept the rest for another (logged 2026-09-24)
+	float peekReturnRate = 6.0f; // back into cover; at the lean-out rate (3) it took 1.5-2 s
 	float camMargin   = 16.0f; // clearance for the near plane, not just the eye point
-	float camPeekDrop = 8.0f;  // eye lowers this much at full lean, as when leaning from the hips
+	float camPeekDrop = 0.0f;  // eye lowers this much at full lean, as when leaning from the hips (8 in 1.0.6)
 
 	// ---- Direction flips (1 or -1) ----------------------------------------------------------------
 	float yawSign   = 1.0f;
@@ -313,6 +320,9 @@ struct Config
 	int aimKey   = 0x02;
 	int leftKey  = 0x41;
 	int rightKey = 0x44;
+	// Not in MCM; a compatibility patch (Data\F4SE\Plugins\Bodycam_*.ini) can still turn it off.
+	bool compatTrustCameraState = true;  // first-person skeleton hidden but camera in first person = still ours
+	int lowReadyToggleKey = 0; // 0 = none. Tap to hold the gun raised; tap again to let it drop
 
 	// ---- Debug ------------------------------------------------------------------------------------
 	// Keep the gun's motion vectors honest for DLSS / frame generation (see Hook_Rig).
@@ -383,13 +393,26 @@ struct Config
 	{
 		if (!tViewLag) lagMaxDeg = 0.0f;
 		if (!tTurnLean) rollTurn = 0.0f;
-		if (!tGunLean) { cantTurn = cantStrafe = 0.0f; gunFollowRoll = 0.0f; gunRestCantDeg = gunRestCantAdsDeg = gunRestPitchDeg = 0.0f; }
+		if (!tGunLean) { cantTurn = cantStrafe = 0.0f; gunFollowRoll = 0.0f; lookInertiaCant = 0.0f; gunRestCantDeg = gunRestCantAdsDeg = gunRestPitchDeg = 0.0f; }
 		if (!tLookInertia) lookInertia = 0.0f;
 		if (!tGunDrag) inertia = 0.0f;
 		if (!tHeadBob) moveMotion = 0.0f;
 		if (!tJumpLand) { jumpLaunchDip = jumpLandImpact = jumpLandShake = jumpLandCrouch = jumpLandGunDip = 0.0f; }
 		if (!tStepImpact) walk.stepImpact = jog.stepImpact = sprint.stepImpact = 0.0f;
 		if (!tRetract) retractBack = retractDrop = retractPitchDeg = 0.0f;
+		// Motion Sickness Mode. Rolling the horizon is the worst of it, so every camera roll goes to a
+		// quarter; the rest are the view swinging on its own after you stop. The stride side motion is
+		// dropped in the bob code. Gun lean follows the camera lean, so it comes down with it.
+		if (noSideMotion)
+		{
+			rollTurn *= 0.25f; rollStrafe *= 0.25f; rollMaxDeg *= 0.25f; // turn / strafe lean
+			camRollDeg *= 0.25f;                                        // corner peek tilt
+			cameraTiltDeg *= 0.25f; tiltAlternate = 0.0f;              // resting tilt, and no drifting side to side
+			bobRollDeg = 0.0f;                                          // footstep roll
+			jumpLandShake *= 0.5f;
+			recoilCameraKick *= 0.5f;
+			viewFloat *= 0.5f;                                          // free-aim overshoot
+		}
 	}
 
 	void LoadFile(const std::string& path)
@@ -425,6 +448,7 @@ struct Config
 		f("Look", "fLagFreq", lagFreq);
 		f("Look", "fLagDamping", lagDamping);
 		b("Look", "bFreeAim", freeAim);
+		b("Look", "bFreeAimDrawnOnly", freeAimDrawnOnly);
 		f("Look", "fFreeAimYawDeg", freeAimYawDeg);
 		f("Look", "fFreeAimPitchDeg", freeAimPitchDeg);
 		f("Look", "fFreeAimRecenter", freeAimRecenter);
@@ -463,6 +487,7 @@ struct Config
 		f("Hold", "fLowReadyDelay", lowReadyDelay);
 		f("Hold", "fLowReadyRaiseRate", lowReadyRaiseRate);
 		f("Hold", "fLowReadyLowerRate", lowReadyLowerRate);
+		b("Hold", "bLowReadyShotRaised", lowReadyShotRaised);
 		f("Hold", "fBlendRate", holdBlendRate);
 		f("Hold", "fScoped", holdScoped);
 
@@ -477,6 +502,7 @@ struct Config
 			}
 		}
 		f("Recoil", "fAimShare", recoilAimShare);
+		f("Recoil", "fVanillaRecoil", vanillaRecoil);
 		f("Recoil", "fGunKick", recoilGunKick);
 		f("Recoil", "fCameraKick", recoilCameraKick);
 		f("Recoil", "fADSScale", recoilAdsScale);
@@ -511,6 +537,7 @@ struct Config
 		f("Roll", "fTiltAlternate", tiltAlternate);
 		f("Roll", "fTiltDriftRate", tiltDriftRate);
 		f("Roll", "fRate", rollRate);
+		f("Roll", "fReturnRate", rollReturnRate);
 
 		b("Bob", "bNoSideMotion", noSideMotion);
 		f("Bob", "fMoveMotion", moveMotion);
@@ -596,6 +623,7 @@ struct Config
 		f("CornerCamera", "fRollDeg", camRollDeg);
 		f("CornerCamera", "fRate", camRate);
 		f("CornerCamera", "fDamping", camPeekDamping);
+		f("CornerCamera", "fReturnRate", peekReturnRate);
 		f("CornerCamera", "fMargin", camMargin);
 		f("CornerCamera", "fDrop", camPeekDrop);
 
@@ -608,6 +636,8 @@ struct Config
 		i("Keys", "iAim", aimKey);
 		i("Keys", "iLeft", leftKey);
 		i("Keys", "iRight", rightKey);
+		i("Keys", "iLowReadyToggle", lowReadyToggleKey);
+		b("Compat", "bTrustCameraState", compatTrustCameraState);
 
 		b("Debug", "bFixMotionVectors", fixMotionVectors);
 		b("Debug", "bLog", debugLog);
@@ -657,6 +687,16 @@ struct Config
 	{
 		Config c;
 		c.LoadFile(DefaultsPath());
+		// Compatibility patches: separate downloads, each a Bodycam_<mod>.ini beside the DLL. Read
+		// before the MCM file so anything the player set in MCM still wins.
+		WIN32_FIND_DATAA fd{};
+		HANDLE h = FindFirstFileA(DataPath("F4SE\\Plugins\\Bodycam_*.ini").c_str(), &fd);
+		if (h != INVALID_HANDLE_VALUE)
+		{
+			do { c.LoadFile(DataPath((std::string("F4SE\\Plugins\\") + fd.cFileName).c_str())); }
+			while (FindNextFileA(h, &fd));
+			FindClose(h);
+		}
 		c.LoadFile(UserPath());
 		c.ApplyToggles();
 		return c;

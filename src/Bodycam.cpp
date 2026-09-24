@@ -8,6 +8,7 @@
 #include "RecoilModel.h"
 
 #include <windows.h>
+#include <xinput.h>
 #include <shlobj.h>
 #include <atomic>
 #include <algorithm>
@@ -103,6 +104,12 @@ namespace Bodycam
 	// the muzzle-delta correction (bob and cant move the muzzle too), and Weapon Scale.
 	// If you add a 1.0.6 behaviour, put it behind g_fovRaised.
 	static bool g_fovRaised = false;
+	// World frustum half-width (tan) with no aim zoom in it, and how far the current zoom narrows
+	// it (1 = none). Weapon packs that zoom on ADS (Combined Arms AUG) shrank the world while the
+	// free-aim box stayed a fixed angle, so the box grew on screen. Read off the render frustum:
+	// PlayerCamera's world FOV field is not the first-person projection.
+	static float g_frustumRest = 0.0f;
+	static float g_zoomScale = 1.0f;
 	static NiMatrix43 g_fovCompRot = Identity();
 
 	// How far this frame's gun pose moved the muzzle; AdjustLaunch subtracts it. The game's spread is
@@ -118,6 +125,7 @@ namespace Bodycam
 	static float g_lagPitch = 0.0f, g_lagPitchVel = 0.0f;
 	static float g_yawRate = 0.0f;
 	static bool  g_freeAim = false; // free-aim box active this frame
+	static bool  g_wasFreeAim = false; // last frame's g_freeAim
 	// Screen float: the view chases the free-aim offset on its own under-damped spring, so it
 	// overshoots a touch and settles when the gun changes direction instead of tracking it rigidly.
 	// Weapon inertia from MOUSE LOOK: the gun swings against the direction you turn and settles.
@@ -162,6 +170,8 @@ namespace Bodycam
 	static NiAVObjectView* FindNode(NiAVObjectView* obj, const char* name, int depth); // defined below
 	static float* LiveFov();                      // defined below
 	static float  WorldFov();                     // defined below (log only)
+	static void   UpdateVanillaRecoil(const Config& c, uintptr_t player); // defined below
+	static void   RestoreAimModels();           // defined below
 	static float g_turnRate = 0.0f; // yaw rate after deadzone + sensitivity; drives both leans
 	static float g_roll = 0.0f;       // turn + strafe lean: drives the gun lean (never gated by the camera switches)
 	static float g_rollScreen = 0.0f; // same, minus strafe when "Camera Tilt When Strafing" is off: screen only
@@ -288,7 +298,74 @@ namespace Bodycam
 		return reinterpret_cast<UpdateWorldDataFn>(vptr[-2]);
 	}
 
+	// Weapon out, or on its way out / not yet put away. Unreadable counts as drawn, so a bad read
+	// can only leave Free Aim on as before, never switch it off in a fight.
+	static bool WeaponDrawn(uintptr_t player)
+	{
+		if (!player)
+			return true;
+		__try
+		{
+			uint32_t bits = *reinterpret_cast<uint32_t*>(player + Offsets::kOff_Actor_weaponStateBits);
+			uint32_t s = (bits >> 1) & 7;
+			return s >= 2 && s <= 4; // drawing, drawn, want to sheathe
+		}
+		__except (EXCEPTION_EXECUTE_HANDLER) { return true; }
+	}
+
 	static bool  KeyDown(int vk) { return (GetAsyncKeyState(vk) & 0x8000) != 0; }
+
+	// Gamepad. Everything below used to read the mouse only, so on a controller LT/RT never
+	// counted: the gun sat in the low ready while aiming and never took its sights pose.
+	// XInput is loaded at runtime (no link dependency). Polled at most every 4 ms; an empty slot
+	// is only retried every 2 s, since XInputGetState on a disconnected pad stalls.
+	typedef DWORD(WINAPI* XInputGetStateFn)(DWORD, XINPUT_STATE*);
+	struct PadState { bool aim = false, fire = false; float lx = 0.0f; };
+	static PadState ReadPad()
+	{
+		static XInputGetStateFn s_get = nullptr;
+		static bool s_loaded = false;
+		static PadState s_pad;
+		static LARGE_INTEGER s_last{}, s_freq{};
+		static int s_slot = -1;
+		static LONGLONG s_nextScan = 0;
+		if (!s_loaded)
+		{
+			s_loaded = true;
+			QueryPerformanceFrequency(&s_freq);
+			HMODULE m = LoadLibraryA("xinput1_4.dll");
+			if (!m) m = LoadLibraryA("xinput9_1_0.dll");
+			if (m) s_get = reinterpret_cast<XInputGetStateFn>(GetProcAddress(m, "XInputGetState"));
+		}
+		if (!s_get)
+			return s_pad;
+		LARGE_INTEGER now;
+		QueryPerformanceCounter(&now);
+		if (s_last.QuadPart && now.QuadPart - s_last.QuadPart < s_freq.QuadPart / 250)
+			return s_pad;
+		s_last = now;
+		XINPUT_STATE st{};
+		if (s_slot >= 0 && s_get(s_slot, &st) != ERROR_SUCCESS)
+			s_slot = -1;
+		if (s_slot < 0 && now.QuadPart >= s_nextScan)
+		{
+			for (int i = 0; i < XUSER_MAX_COUNT && s_slot < 0; ++i)
+				if (s_get(i, &st) == ERROR_SUCCESS)
+					s_slot = i;
+			s_nextScan = now.QuadPart + s_freq.QuadPart * 2;
+		}
+		if (s_slot < 0)
+		{
+			s_pad = {};
+			return s_pad;
+		}
+		s_pad.aim  = st.Gamepad.bLeftTrigger  > XINPUT_GAMEPAD_TRIGGER_THRESHOLD;
+		s_pad.fire = st.Gamepad.bRightTrigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD;
+		s_pad.lx   = st.Gamepad.sThumbLX / 32767.0f;
+		return s_pad;
+	}
+	static bool AimDown(const Config& c) { return KeyDown(c.aimKey) || ReadPad().aim; }
+	static bool FireDown() { return KeyDown(VK_LBUTTON) || ReadPad().fire; }
 	static float Dot(const NiPoint3& a, const NiPoint3& b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 	static NiPoint3 Cross(const NiPoint3& a, const NiPoint3& b)
 	{
@@ -637,6 +714,26 @@ namespace Bodycam
 		return Normalized(Transposed(g_fovCompRot).Mul(Normalized(cand[axis])));
 	}
 
+	// NiCamera::viewFrustum right edge of the world camera (tan of half the horizontal FOV), -1 if unreadable.
+	static float WorldFrustumR()
+	{
+		__try
+		{
+			auto* cam = *reinterpret_cast<PlayerCameraView**>(g_base + Offsets::kRVA_g_playerCamera);
+			auto* cn = cam ? cam->cameraNode : nullptr;
+			if (!cn)
+				return -1.0f;
+			auto addr = reinterpret_cast<uintptr_t>(cn);
+			auto** kids = *reinterpret_cast<NiAVObjectView***>(addr + 0x120 + 0x08);
+			uint16_t n = *reinterpret_cast<uint16_t*>(addr + 0x120 + 0x12);
+			if (!kids || n == 0 || !kids[0])
+				return -1.0f;
+			auto* f = reinterpret_cast<float*>(reinterpret_cast<uintptr_t>(kids[0]) + 0x160);
+			return (f[0] < 0.0f && f[1] > 0.0f && f[1] < 10.0f) ? f[1] : -1.0f;
+		}
+		__except (EXCEPTION_EXECUTE_HANDLER) { return -1.0f; }
+	}
+
 	static void UpdateCrosshair()
 	{
 		const Config& c = g_config;
@@ -759,7 +856,9 @@ namespace Bodycam
 				// and swapping to it moved the standard case by 10%. Not to be "improved"
 				// without a measurement that distinguishes the two; g_crossRAlt below logs the
 				// other hypothesis every shot so one screenshot can settle it.
-				if (!g_fovRaised)
+				// Exception: a weapon that zooms harder than vanilla. tan(fov1st/2) knows nothing of the
+				// zoom, so the crosshair left the point of impact; the frustum does.
+				if (!g_fovRaised && g_zoomScale > 0.999f)
 				{
 					if (float* live = LiveFov())
 					{
@@ -925,6 +1024,8 @@ namespace Bodycam
 		float strafe = 0.0f;
 		if (KeyDown(c.leftKey) != KeyDown(c.rightKey))
 			strafe = KeyDown(c.leftKey) ? -1.0f : 1.0f;
+		else if (float lx = ReadPad().lx; std::fabs(lx) > 0.6f)
+			strafe = lx < 0.0f ? -1.0f : 1.0f;
 
 		float wallDist = c.probeForward, leftDist = c.sideProbe, rightDist = c.sideProbe;
 		bool wallAhead = false, leftBlocked = false, rightBlocked = false;
@@ -1032,7 +1133,12 @@ namespace Bodycam
 						// Unsigned, going past square read as turning back out and dropped the peek.
 						float cosA = std::clamp(Dot(along * (1.0f / alen), fwdFlat), -1.0f, 1.0f);
 						float angDeg = std::acos(cosA) / kDegToRad;
-						float look = std::clamp((angDeg - c.peekStartDeg) / std::max(1.0f, c.peekFullDeg - c.peekStartDeg), 0.0f, 1.0f);
+						// Hysteresis: the corner already being peeked starts 5 deg earlier. Aiming along a wall
+						// sits right on Peek Start Angle, and aim drift of a degree or two found and lost the
+						// corner every second (logged 2026-09-24: corner 1/0/1/0, peek 0.51 -> 0 -> 0.1).
+						const bool heldHere = (dirSide == 0 ? 1 : -1) == g_peekHeldSide;
+						const float startDeg = heldHere ? std::max(0.0f, c.peekStartDeg - 5.0f) : c.peekStartDeg;
+						float look = std::clamp((angDeg - startDeg) / std::max(1.0f, c.peekFullDeg - startDeg), 0.0f, 1.0f);
 						float over = angDeg - (90.0f + c.peekOverDeg);
 						if (over > 0.0f)
 							look *= std::clamp(1.0f - over / 15.0f, 0.0f, 1.0f);
@@ -1049,10 +1155,20 @@ namespace Bodycam
 						}
 					}
 				}
+				// Pick the open side. At the end of a thin panel both faces read as edges, and the far one
+				// leaned the view into the panel (logged 2026-09-24: left probe hitting at 46-75, corner
+				// flipping -1/+1, view -8 deg into it). Exactly one side probe blocked means that side is
+				// the wall, and leaning toward it can only go into it, so its edge is dropped. Square to a
+				// wall both probes hit it, so nothing changes there.
+				if (leftBlocked != rightBlocked)
+				{
+					const int wallIdx = leftBlocked ? 1 : 0;
+					bestScore[wallIdx] = bestLook[wallIdx] = 0.0f;
+				}
+				int side = bestScore[0] >= bestScore[1] ? 0 : 1;
 				// Stay with the corner you are already peeking while it still counts. A wall usually
 				// has an edge at each end; square to it, both read as full lean, and turning on into
 				// it flipped the lean to the far end (logged: corner=+1/-1 alternating every second).
-				int side = bestScore[0] >= bestScore[1] ? 0 : 1;
 				int heldIdx = g_peekHeldSide == 1 ? 0 : (g_peekHeldSide == -1 ? 1 : -1);
 				if (heldIdx >= 0 && bestScore[heldIdx] > 0.0f)
 					side = heldIdx;
@@ -1072,7 +1188,7 @@ namespace Bodycam
 			{
 				int& s_heldSide = g_peekHeldSide;
 				static float s_heldClose = 0.0f, s_lostFor = 0.0f, s_otherFor = 0.0f;
-				constexpr float kHold = 0.35f, kSwitch = 0.15f, kEase = 8.0f;
+				constexpr float kHold = 0.8f, kSwitch = 0.15f, kEase = 8.0f; // hold was 0.35 s: shorter than a glance away
 				if (openSide == 0)
 				{
 					s_lostFor += dt;
@@ -1137,8 +1253,10 @@ namespace Bodycam
 		// gun moved ~112 px at 1440p in each of two consecutive frames and then stopped dead.
 		// A spring starts from zero velocity and builds, so the lean swings out instead of
 		// snapping. This is the same fix, and the same reason, as the gun-cant snap in 1.0.6.
-		SpringTo(g_gunPeek, g_gunPeekVel, peekTarget, c.gunRate, c.gunPeekDamping, dt);
-		SpringTo(g_camPeek, g_camPeekVel, peekTarget, c.camRate, c.camPeekDamping, dt);
+		// Out at the lean speeds, back into cover at Return Speed. Crossing to the other side counts as out.
+		auto back = [&](float cur) { return std::fabs(peekTarget) < std::fabs(cur) && peekTarget * cur >= 0.0f; };
+		SpringTo(g_gunPeek, g_gunPeekVel, peekTarget, back(g_gunPeek) ? c.peekReturnRate : c.gunRate, c.gunPeekDamping, dt);
+		SpringTo(g_camPeek, g_camPeekVel, peekTarget, back(g_camPeek) ? c.peekReturnRate : c.camRate, c.camPeekDamping, dt);
 		g_retract = Approach(g_retract, retractTarget * (1.0f - std::fabs(g_gunPeek)), c.retractRate, dt);
 
 		snprintf(logBuf, logLen, "wall=%d(%.0f) L=%d(%.0f) R=%d(%.0f) strafeKey=%.0f retract=%.2f peek=%.2f corner=%d close=%.2f cancel=%d",
@@ -1232,7 +1350,7 @@ namespace Bodycam
 				}
 			}
 
-			bool firstPerson = rig && (rig->flags & 1) == 0;
+			bool rigHidden = rig && (rig->flags & 1) != 0;
 
 			// Which camera is actually driving? Only the plain first-person state is ours. Dialogue,
 			// VATS, furniture, bleedout and the transitions between them are animated by the engine:
@@ -1241,6 +1359,11 @@ namespace Bodycam
 			// The Museum of Freedom's top floor is one long conversation, which is exactly this.
 			int camStateIdx = ActiveCameraStateIndex(cam);
 			g_camStateIdx = camStateIdx;
+			// The first-person skeleton is hidden in third person, but Full Body First Person also hides it
+			// whenever the weapon is holstered (it draws the real body instead), and reading that as "not
+			// first person" reset all motion every holster - no lean, and a flicker each time it toggled.
+			// So the camera state decides; [Compat] bTrustCameraState=0 goes back to the flag alone.
+			bool firstPerson = rig && (!rigHidden || (c.compatTrustCameraState && camStateIdx == Offsets::kCameraState_FirstPerson));
 			bool ownCamera = !c.firstPersonOnly || camStateIdx == Offsets::kCameraState_FirstPerson;
 			bool menuOpen = c.suspendInMenus && SuspendingMenuOpen();
 			if ((menuOpen ? 1 : 0) != g_prevMenuOpen)
@@ -1257,8 +1380,8 @@ namespace Bodycam
 
 			if ((firstPerson ? 1 : 0) != g_prevFirstPerson)
 			{
-				CP_LOG("first-person state -> %d (rig=0x%p rigFlags=0x%llX camState=%d)",
-					firstPerson, rig, rig ? static_cast<unsigned long long>(rig->flags) : 0ull, ActiveCameraStateIndex(cam));
+				CP_LOG("first-person state -> %d (rig=0x%p rigFlags=0x%llX hidden=%d camState=%d)",
+					firstPerson, rig, rig ? static_cast<unsigned long long>(rig->flags) : 0ull, rigHidden ? 1 : 0, ActiveCameraStateIndex(cam));
 				g_prevFirstPerson = firstPerson ? 1 : 0;
 			}
 
@@ -1347,9 +1470,10 @@ namespace Bodycam
 			// An add-on registered through Bodycam_RegisterRecoilV1 replaces the built-in model
 			// entirely, so the two can never both drive the pose.
 			if (g_recoilHost.Update)
-				g_recoilHost.Update(dt, KeyDown(c.aimKey), c.enabled && ownCamera, &g_recoil);
+				g_recoilHost.Update(dt, AimDown(c), c.enabled && ownCamera, &g_recoil);
 			else
-				RecoilModel::Update(dt, KeyDown(c.aimKey), c.enabled && ownCamera, &g_recoil);
+				RecoilModel::Update(dt, AimDown(c), c.enabled && ownCamera, &g_recoil);
+			UpdateVanillaRecoil(c, reinterpret_cast<uintptr_t>(player));
 			// Diagnostic: is recoil switched on, are impulses arriving, and is anything coming out?
 			// Prints while the springs are moving, plus once a second when they are not, so an
 			// empty result is still evidence rather than silence.
@@ -1549,8 +1673,26 @@ namespace Bodycam
 			// Free-aim box (1.0.3): the gun (= the real aim, where shots go) roams freely inside a
 			// box and the view only turns once it reaches the edge - no spring pulling it back.
 			// Scopes draw a centred overlay, so the box collapses while one is up.
+			// Rest width is only learned with the aim key up and the ADS blend gone, so no zoom is in it.
+			float frR = WorldFrustumR();
+			if (frR > 0.0f)
+			{
+				if (g_frustumRest <= 0.0f || (!AimDown(c) && g_holdAds < 0.01f))
+					g_frustumRest = frR;
+				// Vanilla ADS narrows the frustum to 0.906 of rest (0.7603 vs 0.8391) and 1.0.6 was tuned
+				// with that in; only zoom past it counts, so the standard case is untouched.
+				g_zoomScale = std::clamp(frR / (g_frustumRest * 0.906f), 0.1f, 1.0f);
+			}
 			bool scoped = MenuOpen(kMenu_Scope);
-			g_freeAim = c.freeAim && !scoped;
+			bool drawn = !c.freeAimDrawnOnly || WeaponDrawn(reinterpret_cast<uintptr_t>(player));
+			static bool s_drawnLogged = true;
+			if (drawn != s_drawnLogged)
+			{
+				CP_LOG("free aim: weapon %s -> %s", drawn ? "drawn" : "holstered", drawn ? "on" : "off");
+				s_drawnLogged = drawn;
+			}
+			g_wasFreeAim = g_freeAim;
+			g_freeAim = c.freeAim && !scoped && drawn;
 			if (g_freeAim)
 			{
 				// Gun Speed: only this share of the mouse movement moves the gun across the box; the
@@ -1565,8 +1707,9 @@ namespace Bodycam
 				g_lagYaw *= decay;
 				g_lagPitch *= decay;
 				g_lagYawVel = g_lagPitchVel = 0.0f;
-				ClampLag(g_lagYaw, g_lagYawVel, c.freeAimYawDeg * kDegToRad);
-				ClampLag(g_lagPitch, g_lagPitchVel, c.freeAimPitchDeg * kDegToRad);
+				// Box and lag are screen sizes: shrink them with the zoom so they look the same aimed.
+				ClampLag(g_lagYaw, g_lagYawVel, c.freeAimYawDeg * g_zoomScale * kDegToRad);
+				ClampLag(g_lagPitch, g_lagPitchVel, c.freeAimPitchDeg * g_zoomScale * kDegToRad);
 				// Screen float. Free Aim used to zero the velocity and apply the offset straight to
 				// the view, so Catch-up Speed / Catch-up Smoothness did nothing here and the view
 				// tracked the gun rigidly. Now the APPLIED offset chases the box offset on the same
@@ -1579,7 +1722,7 @@ namespace Bodycam
 					// Max View Lag caps how far the view is allowed to trail the gun here too.
 					// Before this it was read, but the free-aim branch never touched it, so the
 					// slider did nothing at all whenever Free Aim was on - which is the default.
-					const float lagMax = c.lagMaxDeg * kDegToRad;
+					const float lagMax = c.lagMaxDeg * g_zoomScale * kDegToRad;
 					g_floatYaw   = g_lagYaw   + std::clamp(g_floatYaw   - g_lagYaw,   -lagMax, lagMax);
 					g_floatPitch = g_lagPitch + std::clamp(g_floatPitch - g_lagPitch, -lagMax, lagMax);
 				}
@@ -1593,7 +1736,7 @@ namespace Bodycam
 			{
 				g_floatYaw = g_lagYaw; g_floatPitch = g_lagPitch; // float is a Free Aim effect only
 				g_floatYawVel = g_floatPitchVel = 0.0f;
-				float lagMax = c.lagMaxDeg * kDegToRad;
+				float lagMax = c.lagMaxDeg * g_zoomScale * kDegToRad;
 				if (scoped) // snap back onto the scope quickly but smoothly
 				{
 					float decay = std::exp(-20.0f * dt);
@@ -1602,8 +1745,27 @@ namespace Bodycam
 				}
 				Spring(g_lagYaw, g_lagYawVel, c.lagFreq, c.lagDamping, dt);
 				Spring(g_lagPitch, g_lagPitchVel, c.lagFreq, c.lagDamping, dt);
-				ClampLag(g_lagYaw, g_lagYawVel, lagMax);
-				ClampLag(g_lagPitch, g_lagPitchVel, lagMax);
+				// Free Aim just switched off (holstered) with more offset than Max View Lag allows - with
+				// View Lag off that is 0, and the hard clamp below snapped the view to centre in one frame.
+				// Ease the excess away first; the clamp takes over once inside the limit.
+				static bool s_easing = false;
+				if (g_wasFreeAim)
+					s_easing = true;
+				if (s_easing && (std::fabs(g_lagYaw) > lagMax + 1e-4f || std::fabs(g_lagPitch) > lagMax + 1e-4f))
+				{
+					float k = std::exp(-8.0f * dt);
+					auto ease = [&](float& x, float& v) {
+						if (std::fabs(x) > lagMax) { x = std::copysign(lagMax + (std::fabs(x) - lagMax) * k, x); v = 0.0f; }
+					};
+					ease(g_lagYaw, g_lagYawVel);
+					ease(g_lagPitch, g_lagPitchVel);
+				}
+				else
+				{
+					s_easing = false;
+					ClampLag(g_lagYaw, g_lagYawVel, lagMax);
+					ClampLag(g_lagPitch, g_lagPitchVel, lagMax);
+				}
 			}
 
 			// Weapon inertia: several kilos of metal does not change direction the instant the mouse
@@ -1636,8 +1798,13 @@ namespace Bodycam
 			float strafeRoll = g_strafeNorm * c.rollStrafe;
 			float rollTarget = std::clamp(turnRoll + strafeRoll, -c.rollMaxDeg, c.rollMaxDeg);
 			float rollScreenTarget = std::clamp(turnRoll + (c.strafeTilt ? strafeRoll : 0.0f), -c.rollMaxDeg, c.rollMaxDeg);
-			g_roll = Approach(g_roll, rollTarget, c.rollRate, dt);
-			g_rollScreen = Approach(g_rollScreen, rollScreenTarget, c.rollRate, dt);
+			// Leans in at Lean Speed, settles back at the slower Return Speed so the tilt holds through
+			// the end of a turn. A flip to the other side counts as leaning in.
+			auto leanRate = [&](float cur, float tgt) {
+				return (std::fabs(tgt) < std::fabs(cur) && tgt * cur >= 0.0f) ? c.rollReturnRate : c.rollRate;
+			};
+			g_roll = Approach(g_roll, rollTarget, leanRate(g_roll, rollTarget), dt);
+			g_rollScreen = Approach(g_rollScreen, rollScreenTarget, leanRate(g_rollScreen, rollScreenTarget), dt);
 
 			// Chest-mounted bob, per gait. Speed is smoothed so walk -> jog -> sprint blends instead
 			// of popping (keeps frame generation happy), then amplitude/sway/rhythm are interpolated
@@ -1778,7 +1945,7 @@ namespace Bodycam
 			float swayRollDeg = std::sin(g_phase) * gsr * standFade;
 
 			char wallLog[180]{};
-			bool aiming = c.enabled && KeyDown(c.aimKey);
+			bool aiming = c.enabled && AimDown(c);
 			UpdateWalls(c, dt, g_trueEye, fwdFlat, rightFlat, aiming, world, wallLog, sizeof(wallLog));
 
 			// Corner lean shift for the view, collision-clamped so it never enters geometry.
@@ -2054,6 +2221,189 @@ namespace Bodycam
 		__except (EXCEPTION_EXECUTE_HANDLER) { return false; }
 	}
 
+	// ---- Vanilla recoil scale ------------------------------------------------------------------
+	// Bodycam's recoil went on top of the weapon's own aim-model kick, so every shot kicked twice,
+	// and the vanilla half also rotates the camera, which the look code reads as mouse movement
+	// (free-aim box, inertia swing, view lag all fed off it). This scales the aim model's
+	// Recoil Min/Max Per Shot. Spread (cone of fire) is left alone: the shot hook measures it.
+	//
+	// Aim models are shared forms, so every write is worked out from the value first seen. If the
+	// current value is neither the original nor what was last written, something else owns it now
+	// (a fresh aim model at a reused address, another mod) and it is re-captured, never compounded.
+	struct AimModelEntry { uint8_t* am; uint32_t formID; float origMax, origMin, wroteMax, wroteMin; };
+	static AimModelEntry g_aimModels[64];
+	static int g_aimModelCount = 0;
+
+	static bool PlausibleRecoil(float mx, float mn, float hip)
+	{
+		return std::isfinite(mx) && std::isfinite(mn) && std::isfinite(hip)
+			&& mn >= 0.0f && mx >= 0.0f && mx <= 90.0f && mn <= 90.0f && hip >= 0.0f && hip <= 20.0f;
+	}
+
+	static void WriteAimModel(AimModelEntry& e, float scale)
+	{
+		float mx = e.origMax * scale, mn = e.origMin * scale;
+		*reinterpret_cast<float*>(e.am + Offsets::kOff_AimModel_recoilMax) = mx;
+		*reinterpret_cast<float*>(e.am + Offsets::kOff_AimModel_recoilMin) = mn;
+		e.wroteMax = mx;
+		e.wroteMin = mn;
+	}
+
+	// The equipped weapon's aim model form, and (via *live) the working copy the game fires from.
+	static uint8_t* EquippedAimModel(uintptr_t player, uint8_t** live)
+	{
+		*live = nullptr;
+		auto* proc = *reinterpret_cast<uint8_t**>(player + Offsets::kOff_Actor_middleProcess);
+		auto* data = proc ? *reinterpret_cast<uint8_t**>(proc + Offsets::kOff_Process_data08) : nullptr;
+		if (!data)
+			return nullptr;
+		auto* entries = *reinterpret_cast<uint8_t**>(data + Offsets::kOff_Data08_equipData);
+		uint32_t count = *reinterpret_cast<uint32_t*>(data + Offsets::kOff_Data08_equipData + 0x10);
+		for (uint32_t i = 0; entries && i < count && i < 8; ++i)
+		{
+			uint8_t* e = entries + i * Offsets::kEquipDataSize;
+			auto* item = *reinterpret_cast<uint8_t**>(e);
+			if (!item || item[Offsets::kOff_Form_formType] != Offsets::kFormType_WEAP)
+				continue;
+			auto* wd = *reinterpret_cast<uint8_t**>(e + Offsets::kOff_EquipData_data);
+			auto* la = wd ? *reinterpret_cast<uint8_t**>(wd + Offsets::kOff_EquipWeapData_aimModel) : nullptr;
+			if (la && *reinterpret_cast<uintptr_t*>(la + Offsets::kOff_LiveAim_actor) == player)
+				*live = la;
+			auto* inst = *reinterpret_cast<uint8_t**>(e + 0x08);
+			return inst ? *reinterpret_cast<uint8_t**>(inst + Offsets::kOff_WeapInstance_aimModel) : nullptr;
+		}
+		return nullptr;
+	}
+
+	static void RestoreAimModels()
+	{
+		for (int i = 0; i < g_aimModelCount; ++i)
+		{
+			AimModelEntry& e = g_aimModels[i];
+			__try
+			{
+				float* pmx = reinterpret_cast<float*>(e.am + Offsets::kOff_AimModel_recoilMax);
+				float* pmn = reinterpret_cast<float*>(e.am + Offsets::kOff_AimModel_recoilMin);
+				// Only put back what is still ours.
+				if (*pmx == e.wroteMax && *pmn == e.wroteMin)
+				{
+					*pmx = e.origMax;
+					*pmn = e.origMin;
+				}
+			}
+			__except (EXCEPTION_EXECUTE_HANDLER) {}
+			e.wroteMax = e.origMax;
+			e.wroteMin = e.origMin;
+		}
+	}
+
+	// Working copy: set it to what the form should hold now, but only if what is there is a value
+	// that came from us or from the form (original or scaled) - never over something another mod put there.
+	static uint8_t* g_liveAim = nullptr;
+	static float g_liveWroteMax = -1.0f, g_liveWroteMin = -1.0f;
+	static void SyncLiveAim(uint8_t* live, const AimModelEntry& e, float scale)
+	{
+		if (!live)
+			return;
+		float* lmx = reinterpret_cast<float*>(live + Offsets::kOff_LiveAim_recoilMax);
+		float* lmn = reinterpret_cast<float*>(live + Offsets::kOff_LiveAim_recoilMin);
+		float tmx = e.origMax * scale, tmn = e.origMin * scale;
+		if (*lmx == tmx && *lmn == tmn)
+			return;
+		bool known = (*lmx == e.origMax && *lmn == e.origMin) || (*lmx == e.wroteMax && *lmn == e.wroteMin)
+			|| (live == g_liveAim && *lmx == g_liveWroteMax && *lmn == g_liveWroteMin);
+		if (!known)
+			return;
+		*lmx = tmx;
+		*lmn = tmn;
+		g_liveAim = live;
+		g_liveWroteMax = tmx;
+		g_liveWroteMin = tmn;
+		CP_LOG("vanilla recoil: live aim %p -> %.2f-%.2f deg (x%.2f)", live, tmn, tmx, scale);
+	}
+
+	static void UpdateVanillaRecoil(const Config& c, uintptr_t player)
+	{
+		float scale = (c.enabled && c.recoil) ? std::clamp(c.vanillaRecoil, 0.0f, 1.0f) : 1.0f;
+		static float s_lastScale = 1.0f;
+		if (scale != s_lastScale)
+		{
+			CP_LOG("vanilla recoil: scale %.2f -> %.2f", s_lastScale, scale);
+			if (scale >= 0.999f)
+				RestoreAimModels();
+			s_lastScale = scale;
+		}
+		if (!player)
+			return;
+		__try
+		{
+			uint8_t* live = nullptr;
+			uint8_t* am = EquippedAimModel(player, &live);
+			if (!am)
+				return;
+			float* pmx = reinterpret_cast<float*>(am + Offsets::kOff_AimModel_recoilMax);
+			float* pmn = reinterpret_cast<float*>(am + Offsets::kOff_AimModel_recoilMin);
+			float hip = *reinterpret_cast<float*>(am + Offsets::kOff_AimModel_recoilHip);
+			uint32_t formID = *reinterpret_cast<uint32_t*>(am + Offsets::kOff_Form_formID);
+			int idx = -1;
+			for (int i = 0; i < g_aimModelCount; ++i)
+				if (g_aimModels[i].am == am) { idx = i; break; }
+			if (idx >= 0)
+			{
+				AimModelEntry& e = g_aimModels[idx];
+				bool ours = *pmx == e.wroteMax && *pmn == e.wroteMin;
+				if (ours && e.formID == formID)
+				{
+					if (e.wroteMax != e.origMax * scale || e.wroteMin != e.origMin * scale)
+					{
+						WriteAimModel(e, scale); // slider moved
+						CP_LOG("vanilla recoil: aim model %p rewritten -> %.2f-%.2f deg (x%.2f)", am, e.wroteMin, e.wroteMax, scale);
+					}
+					SyncLiveAim(live, e, scale);
+					return;
+				}
+				// Not what we left there: re-capture below as if new.
+				CP_LOG("vanilla recoil: aim model %08X at %p changed outside Bodycam (max %.2f, expected %.2f) - re-reading",
+					formID, am, *pmx, e.wroteMax);
+			}
+			// At 1 nothing new is captured; the game's values are already the right ones.
+			if (scale >= 0.999f)
+				return;
+			if (!PlausibleRecoil(*pmx, *pmn, hip))
+			{
+				static uint8_t* s_badLogged = nullptr;
+				if (s_badLogged != am)
+				{
+					s_badLogged = am;
+					CP_LOG("vanilla recoil: aim model %08X at %p does not look like recoil data (max=%g min=%g hip=%g) - left alone",
+						formID, am, *pmx, *pmn, hip);
+				}
+				return;
+			}
+			if (idx < 0)
+			{
+				if (g_aimModelCount >= static_cast<int>(sizeof(g_aimModels) / sizeof(g_aimModels[0])))
+				{
+					// Table full: drop the oldest back to vanilla and reuse its slot.
+					AimModelEntry& old = g_aimModels[0];
+					float* omx = reinterpret_cast<float*>(old.am + Offsets::kOff_AimModel_recoilMax);
+					float* omn = reinterpret_cast<float*>(old.am + Offsets::kOff_AimModel_recoilMin);
+					if (*omx == old.wroteMax && *omn == old.wroteMin) { *omx = old.origMax; *omn = old.origMin; }
+					std::memmove(&g_aimModels[0], &g_aimModels[1], sizeof(AimModelEntry) * (g_aimModelCount - 1));
+					--g_aimModelCount;
+				}
+				idx = g_aimModelCount++;
+			}
+			AimModelEntry& e = g_aimModels[idx];
+			e = { am, formID, *pmx, *pmn, *pmx, *pmn };
+			WriteAimModel(e, scale);
+			CP_LOG("vanilla recoil: aim model %08X - recoil per shot %.2f-%.2f deg (hip x%.2f) -> %.2f-%.2f (x%.2f)",
+				formID, e.origMin, e.origMax, hip, e.wroteMin, e.wroteMax, scale);
+			SyncLiveAim(live, e, scale);
+		}
+		__except (EXCEPTION_EXECUTE_HANDLER) {}
+	}
+
 	// Viewmodel FOV = the player's normal weapon FOV (read from the game INIs, never learned from
 	// the live value) + our eased offset. 1.0.4 adopted any outside change as the new base, and the
 	// game re-applying our own value ratcheted it up to the clamp - which then got saved into the
@@ -2204,7 +2554,7 @@ namespace Bodycam
 			h = probePhase ? &kProbeOn : &kProbeOff;
 		}
 
-		bool aiming = KeyDown(c.aimKey);
+		bool aiming = AimDown(c);
 		g_holdAds = Approach(g_holdAds, aiming ? 1.0f : 0.0f, c.holdBlendRate, dt);
 
 		LARGE_INTEGER now;
@@ -2215,7 +2565,18 @@ namespace Bodycam
 		// delay. Only turns and drops the gun - no forward push - so the arm-mesh stump stays hidden.
 		int lrType = c.lowReady ? (type >= 0 ? type : SafeDetectHoldType(player)) : -1;
 		bool recentShot = g_lastShotTick.QuadPart != 0 && Seconds(g_lastShotTick, now) < c.lowReadyDelay;
-		bool raised = aiming || recentShot || KeyDown(VK_LBUTTON) || scoped;
+		// Toggle key: rising edge only, so holding it does not flicker. Off when the key is 0.
+		static bool s_lrHeld = false, s_lrKeyWas = false;
+		bool lrKey = c.lowReadyToggleKey > 0 && KeyDown(c.lowReadyToggleKey);
+		if (lrKey && !s_lrKeyWas)
+		{
+			s_lrHeld = !s_lrHeld;
+			CP_LOG("low ready: toggle -> %s", s_lrHeld ? "held raised" : "auto");
+		}
+		s_lrKeyWas = lrKey;
+		if (c.lowReadyToggleKey <= 0)
+			s_lrHeld = false;
+		bool raised = aiming || recentShot || FireDown() || scoped || s_lrHeld;
 		float lowTarget = (lrType >= 0 && !raised && !c.holdProbe) ? 1.0f : 0.0f;
 		g_lowReady = Approach(g_lowReady, lowTarget, lowTarget > g_lowReady ? c.lowReadyLowerRate : c.lowReadyRaiseRate, dt);
 
@@ -2233,7 +2594,7 @@ namespace Bodycam
 		s_hipHeight = Approach(s_hipHeight, h ? h->hipHeight * hipW : 0.0f,  c.holdBlendRate, dt);
 		// Hip Raise: comes up at the low ready raise speed while firing, settles at its lower speed.
 		static float s_hipRaise = 0.0f;
-		bool firing = recentShot || KeyDown(VK_LBUTTON);
+		bool firing = recentShot || FireDown();
 		float raiseTarget = (h && firing) ? h->hipRaise * hipW : 0.0f;
 		s_hipRaise = Approach(s_hipRaise, raiseTarget, raiseTarget > s_hipRaise ? c.lowReadyRaiseRate : c.lowReadyLowerRate, dt);
 		// Same timing for levelling the muzzle. Weapon Hold or not, since the
@@ -2605,12 +2966,14 @@ namespace Bodycam
 			// Weapon inertia. Turning the gun back against the turn cancels Free Aim's own lead, so
 			// under Free Aim it only cants and slides; without it, it does all three.
 			// Scaled by the intensity preset like every other amplitude.
-			float swingYaw = g_freeAim ? 0.0f : g_swingYaw * g_amplitude;
-			float swingPitch = g_freeAim ? 0.0f : g_swingPitch * g_amplitude;
+			// Fades out in ADS: at full strength it swung the sights off target on every turn.
+			const float swingAds = 1.0f - g_holdAds;
+			float swingYaw = g_freeAim ? 0.0f : g_swingYaw * g_amplitude * swingAds;
+			float swingPitch = g_freeAim ? 0.0f : g_swingPitch * g_amplitude * swingAds;
 			// Negated: the swing runs against the turn, but Gun Lean Into Turns leans with it, and
 			// the two cancelled. Tilting the same way as the turn lean lets them stack.
-			float swingCant = -g_swingYaw * c.lookInertiaCant * g_amplitude;
-			NiPoint3 swingSlide = right * (g_swingYaw * c.lookInertiaSlide * g_amplitude) + up * (g_swingPitch * c.lookInertiaSlide * g_amplitude);
+			float swingCant = -g_swingYaw * c.lookInertiaCant * g_amplitude * swingAds;
+			NiPoint3 swingSlide = (right * (g_swingYaw * c.lookInertiaSlide) + up * (g_swingPitch * c.lookInertiaSlide)) * (g_amplitude * swingAds);
 			// Corner: Gun Turn is hip-only. Aimed, it turned the gun off the sight line.
 			float yaw   = (-g_gunPeek * c.gunYawDeg * c.yawSign * (1.0f - g_holdAds) + g_recoil.gunYawDeg + swingYaw) * kDegToRad * wg;
 			float yawHold = 0.0f; // low ready swing, added once the pose is known below
@@ -2836,6 +3199,15 @@ namespace Bodycam
 		void** originalVtable = *reinterpret_cast<void***>(instance);
 		if (currentShadow && originalVtable == currentShadow)
 			return currentShadow;
+		// Already carrying one of our tables from an earlier install: power armor swaps the skeleton
+		// out and back, and the returning one still has the table from the first time. Wrapping it
+		// again made our hook its own "original" - it called itself until the stack ran out, which
+		// is the crash on leaving power armor (the log showed a garbage original RVA just before).
+		if (originalVtable[Offsets::kVtblIndex_UpdateWorldData] == reinterpret_cast<void*>(hook))
+		{
+			CP_LOG("UpdateWorldData hook on %s 0x%p already in place - reusing it", what, instance);
+			return originalVtable;
+		}
 
 		// Allocated per install and never freed: an old instance may still hold the previous
 		// table, and it must keep pointing at functions valid for its own class.
@@ -2979,7 +3351,7 @@ namespace Bodycam
 		}
 		QueryPerformanceCounter(&g_lastShotTick); // Weapon Hold: raise out of the low ready
 
-		bool aiming = KeyDown(c.aimKey);
+		bool aiming = AimDown(c);
 		uint32_t formID = 0;
 		if (d->weapon[0])
 			formID = *reinterpret_cast<uint32_t*>(reinterpret_cast<uintptr_t>(d->weapon[0]) + Offsets::kOff_Form_formID);
@@ -3148,6 +3520,17 @@ namespace Bodycam
 		// in front of the eye, so at very short range a hip-fire shot lands below the crosshair by
 		// roughly that much, shrinking to nothing with distance - the same as a real gun.
 		NiPoint3 shotDir = barrel;
+		// Out of the low ready the barrel still points at the floor for the first shot or two, even at
+		// max Raise Speed. Optional: send those to the aim point instead. g_lowReady eases out
+		// exponentially and never quite reaches 0, so a plain weight kept tugging every shot of a
+		// burst toward the crosshair and ate the recoil. Zero from 80% raised; full from 60% down.
+		if (c.lowReadyShotRaised)
+		{
+			float w = std::clamp((g_lowReady - 0.2f) / 0.4f, 0.0f, 1.0f);
+			w = w * w * (3.0f - 2.0f * w);
+			if (w > 0.0f)
+				shotDir = Normalized(barrel + (aimFromMuzzle - barrel) * w);
+		}
 		float newZ = Wrap(HeadingOf(shotDir) + useSpreadZ);
 		float newX = PitchDownOf(shotDir) + useSpreadX;
 		float oldZ = d->zAngle, oldX = d->xAngle;
@@ -3363,7 +3746,7 @@ namespace Bodycam
 		g_installing = false;
 	}
 
-	// F4SE PreSaveGame: never let a save capture our weapon FOV offset. The next frame puts it back.
+	// F4SE PreSaveGame: never let a save capture our weapon FOV offset or scaled recoil. The next frame puts them back.
 	void OnPreSave()
 	{
 		__try
@@ -3375,6 +3758,8 @@ namespace Bodycam
 				g_fovWritten = g_fovBase;
 				CP_LOG("weapon hold: save - weapon FOV restored to %.1f for the save", g_fovBase);
 			}
+			// Aim models are forms; keep the scaled recoil out of the save too. The next frame re-applies it.
+			RestoreAimModels();
 		}
 		__except (EXCEPTION_EXECUTE_HANDLER) {}
 	}

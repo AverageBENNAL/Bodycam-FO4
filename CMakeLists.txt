@@ -13,16 +13,17 @@ file(STRINGS CHANGELOG.md BODYCAM_VERSION_LINE REGEX "^## [0-9]+\.[0-9]+\.[0-9]+
 string(REGEX MATCH "[0-9]+\.[0-9]+\.[0-9]+" BODYCAM_VERSION "${BODYCAM_VERSION_LINE}")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS CHANGELOG.md)
 
-# Two builds of the same source, one per game exe (addresses differ, see src/Offsets.h). Both
+# Three builds of the same source, one per game exe (addresses differ, see src/Offsets.h). Both
 # DLLs are named Bodycam.dll; the FOMOD installs whichever matches the player's game.
-#   Bodycam     -> build/dist/Release/Bodycam.dll     Fallout 4 1.11.240 (AE),       F4SE 0.7.x
+#   Bodycam     -> build/dist/Release/Bodycam.dll     Fallout 4 1.11.240 (AE),       F4SE 0.7.9
+#   Bodycam_NG  -> build/dist_ng/Release/Bodycam.dll  Fallout 4 1.10.984 (next-gen), F4SE 0.7.2
 #   Bodycam_OG  -> build/dist_og/Release/Bodycam.dll  Fallout 4 1.10.163 (old-gen),  F4SE 0.6.23
 set(BODYCAM_SOURCES
 	src/PluginMain.cpp
 	src/Bodycam.cpp
 )
 
-foreach(target Bodycam Bodycam_OG)
+foreach(target Bodycam Bodycam_NG Bodycam_OG)
 	add_library(${target} SHARED ${BODYCAM_SOURCES})
 
 	target_include_directories(${target} PRIVATE src)
@@ -35,7 +36,9 @@ foreach(target Bodycam Bodycam_OG)
 	set_target_properties(${target} PROPERTIES OUTPUT_NAME "Bodycam")
 endforeach()
 
+target_compile_definitions(Bodycam_NG PRIVATE BODYCAM_NG)
 target_compile_definitions(Bodycam_OG PRIVATE BODYCAM_OG)
 # Separate output dirs for everything (DLL, import lib, PDB) - the shared OUTPUT_NAME would clash.
 set_target_properties(Bodycam    PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/dist"    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/dist")
+set_target_properties(Bodycam_NG PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/dist_ng" ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/dist_ng")
 set_target_properties(Bodycam_OG PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/dist_og" ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/dist_og")
