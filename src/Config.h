@@ -30,7 +30,11 @@ struct Config
 	                    // hand. Two-handed guns stay at 1: turning in the hand pulls the handguard out of
 	                    // the support hand and they read as held one-handed.
 	                    float lrArmShare = 1.0f;
-	                    float hipFov = 0.0f; };    // weapon FOV change in hip fire
+	                    float hipFov = 0.0f;       // weapon FOV change in hip fire
+	                    // Eye-to-sights distance the Sights FOV Change was tuned at. A weapon whose own
+	                    // animation holds the sights further out (Combined Arms pistols, ~24) gets its
+	                    // boost cut back so it draws the same size. 0 = off.
+	                    float sightsRefDist = 0.0f; };
 	static constexpr int kHoldTypes = 5;
 	bool  weaponHold  = true;
 	// Weapon and world FOV are different projections, so the drawn gun is rotated by
@@ -48,6 +52,9 @@ struct Config
 	// 2 = always. It is a balance change, not an aim fix - vanilla spread is the weapon's
 	// accuracy cone and no aim correction can remove it.
 	int   pinpoint = 1;
+	// Random cone, in degrees, that quick follow-up shots from a non-automatic gun get while pinpoint
+	// is on. Grows over three shots; the first shot of a string stays exact.
+	float rapidFireScatterDeg = 1.5f;
 	// The red hit marker. It lives outside the crosshair clip we move, so with Free Aim it stays
 	// at screen centre while the shot lands where the gun pointed.
 	// 0 = leave it alone, 1 = move it with the gun, 2 = hide it.
@@ -56,14 +63,17 @@ struct Config
 		// Sights/FOV reverted 2026-09-20 to the 1.0.5 values: the later tuning traded distance for
 		// weapon FOV, and a high weapon FOV widens the WHOLE first-person view, which read as warped.
 		//  hipFwd height side pitch | lrAngle lrYaw lrDrop lrSide | sights fov | hipRaise lrArm hipFov
-		{ 5.0f, -1.0f, -5.0f, -4.0f,  10.0f, 15.0f, 8.0f, -0.5f,  55.0f, 50.0f,  5.0f, 0.1f, 5.0f }, // Pistol (tuned in game)
-		{ 15.0f, -1.0f, 0.0f, -4.0f,  10.0f, 45.0f, 0.0f, 0.0f,  50.0f, 40.0f,  0.5f, 1.0f, 5.0f }, // Rifle / SMG
-		{ 15.0f, -20.0f, 15.0f, 9.5f,  -30.0f, 70.0f, 0.0f, 0.0f,  40.0f, 40.0f,  10.0f, 1.0f, 5.0f }, // Shotgun
-		{ 20.0f, -3.5f, 0.0f, 0.0f,  -20.0f, 40.0f, -8.0f, 0.0f,  20.0f, 40.0f,  0.0f, 1.0f, 10.0f }, // Heavy
-		{ 10.0f, -6.0f, 0.0f, 0.0f,  -5.0f, -20.0f, 0.0f, 0.0f,  15.0f, 0.0f,  0.0f, 0.6f, 10.0f }, // Melee / unarmed
+		{ 5.0f, -1.0f, -5.0f, -4.0f,  10.0f, 15.0f, 8.0f, -0.5f,  0.0f, 50.0f,  5.0f, 0.1f, 5.0f, 15.0f }, // Pistol (tuned in game)
+		{ 15.0f, -1.0f, 0.0f, -4.0f,  10.0f, 45.0f, 0.0f, 0.0f,  0.0f, 40.0f,  0.5f, 1.0f, 5.0f }, // Rifle / SMG
+		{ 15.0f, -20.0f, 15.0f, 9.5f,  -30.0f, 70.0f, 0.0f, 0.0f,  0.0f, 40.0f,  10.0f, 1.0f, 5.0f }, // Shotgun
+		{ 20.0f, -3.5f, 0.0f, 0.0f,  -20.0f, 40.0f, -8.0f, 0.0f,  0.0f, 40.0f,  0.0f, 1.0f, 10.0f }, // Heavy
+		{ 10.0f, -6.0f, 0.0f, 0.0f,  -5.0f, -20.0f, 0.0f, 0.0f,  0.0f, 0.0f,  0.0f, 0.6f, 10.0f }, // Melee / unarmed
 	};
 	float sightsUpDown      = 0.0f;  // calibration: raises (+) / lowers (-) the gun while aiming
 	bool  lowReady          = true;  // muzzle dips when not shooting (hip); pose is per type in hold[]
+	// On a pad you stand and walk far more than you shoot, so the low ready is what you see most,
+	// and at full swing it read as the aim drifting left (two reports, 1.0.7).
+	bool  controllerMode    = false;
 	// While firing from the hip, this share of the hip muzzle dip (Hip Muzzle Angle + Resting
 	// Muzzle Pitch) is taken out, so the barrel comes level with the crosshair.
 	float hipFireLevel      = 1.0f;
@@ -96,6 +106,9 @@ struct Config
 		{ 7.4f, 6.0f },  // Heavy: scaled, not measured
 		{ 0.0f, 0.0f },  // Melee: no shot to recoil from
 	};
+	// Rifles carrying WeaponTypeAutomatic. Each round stacks on the last, so it kicks less per shot.
+	RecoilProfile recoilAutoRifle = { 2.5f, 4.0f };
+	float recoilPowerArmor = 0.3f; // all recoil x this in power armor: the frame takes the kick
 	// How much of the kick moves your REAL point of aim. This is the balance-affecting part:
 	// bullets follow it, so sustained fire climbs and has to be controlled. 0 = purely visual.
 	float recoilAimShare   = 0.40f;
@@ -162,7 +175,7 @@ struct Config
 	bool  strafeTilt = true;  // camera leans on strafes (gun unaffected)
 	float rollStrafe = -2.0f;  // degrees at full strafe speed (0 = turning only)
 	float rollMaxDeg = 5.0f;
-	bool  cameraTilt = true;  // master on/off for all camera tilt (turn lean, bob roll, stride tilt)
+	bool  cameraTilt = false; // the constant resting tilt only; turn lean, bob roll and stride tilt are separate
 	float cameraTiltDeg = 1.0f;  // resting camera tilt: + = right, - = left, 0 = level
 	// The camera works its way to one side, sits there, then settles the other way - average
 	// seconds between side changes. 0 = a fixed tilt that never moves.
@@ -318,6 +331,8 @@ struct Config
 
 	// ---- Keys (Windows virtual-key codes): right mouse, A, D -----------------------------------
 	int aimKey   = 0x02;
+	// For toggle aim mods: aiming is read from the game's ADS zoom, not only the held key.
+	bool toggleAim = false;
 	int leftKey  = 0x41;
 	int rightKey = 0x44;
 	// Not in MCM; a compatibility patch (Data\F4SE\Plugins\Bodycam_*.ini) can still turn it off.
@@ -400,6 +415,9 @@ struct Config
 		if (!tJumpLand) { jumpLaunchDip = jumpLandImpact = jumpLandShake = jumpLandCrouch = jumpLandGunDip = 0.0f; }
 		if (!tStepImpact) walk.stepImpact = jog.stepImpact = sprint.stepImpact = 0.0f;
 		if (!tRetract) retractBack = retractDrop = retractPitchDeg = 0.0f;
+		if (controllerMode)
+			for (Hold& h : hold)
+				h.lrYawDeg *= 0.45f; // rifle 45 -> 20, shotgun 70 -> 32
 		// Motion Sickness Mode. Rolling the horizon is the worst of it, so every camera roll goes to a
 		// quarter; the rest are the view swinging on its own after you stop. The stride side motion is
 		// dropped in the bob code. Gun lean follows the camera lean, so it comes down with it.
@@ -460,6 +478,7 @@ struct Config
 		b("Main", "bWeaponHold", weaponHold);
 		i("Look", "iHipAim", hipAim);
 		i("Look", "iPinpoint", pinpoint);
+		f("Look", "fRapidFireScatter", rapidFireScatterDeg);
 		i("Look", "iHitIndicator", hitIndicator);
 		{
 			static const char* const kTypes[kHoldTypes] = { "Pistol", "Rifle", "Shotgun", "Heavy", "Melee" };
@@ -479,10 +498,12 @@ struct Config
 				snprintf(k, sizeof(k), "f%sLowReadySide", kTypes[t]);     f("Hold", k, hold[t].lrSide);
 				snprintf(k, sizeof(k), "f%sSightsForward", kTypes[t]); f("Hold", k, hold[t].sightsForward);
 				snprintf(k, sizeof(k), "f%sFovOffset", kTypes[t]);     f("Hold", k, hold[t].fovOffset);
+				snprintf(k, sizeof(k), "f%sSightsRefDist", kTypes[t]); f("Hold", k, hold[t].sightsRefDist);
 			}
 		}
 		f("Hold", "fSightsUpDown", sightsUpDown);
 		b("Hold", "bLowReady", lowReady);
+		b("Main", "bControllerMode", controllerMode);
 		f("Hold", "fHipFireLevel", hipFireLevel);
 		f("Hold", "fLowReadyDelay", lowReadyDelay);
 		f("Hold", "fLowReadyRaiseRate", lowReadyRaiseRate);
@@ -501,6 +522,9 @@ struct Config
 				snprintf(k, sizeof(k), "f%sBack", kTypes[t]);    f("Recoil", k, recoilType[t].kickBack);
 			}
 		}
+		f("Recoil", "fAutoRifleClimbDeg", recoilAutoRifle.climbDeg);
+		f("Recoil", "fAutoRifleBack", recoilAutoRifle.kickBack);
+		f("Recoil", "fPowerArmor", recoilPowerArmor);
 		f("Recoil", "fAimShare", recoilAimShare);
 		f("Recoil", "fVanillaRecoil", vanillaRecoil);
 		f("Recoil", "fGunKick", recoilGunKick);
@@ -634,6 +658,7 @@ struct Config
 		f("Signs", "fPitch", pitchSign);
 
 		i("Keys", "iAim", aimKey);
+		b("Keys", "bToggleAim", toggleAim);
 		i("Keys", "iLeft", leftKey);
 		i("Keys", "iRight", rightKey);
 		i("Keys", "iLowReadyToggle", lowReadyToggleKey);

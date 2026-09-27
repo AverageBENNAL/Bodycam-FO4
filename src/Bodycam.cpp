@@ -169,6 +169,7 @@ namespace Bodycam
 
 	static NiAVObjectView* FindNode(NiAVObjectView* obj, const char* name, int depth); // defined below
 	static float* LiveFov();                      // defined below
+	static void   ReleaseViewmodelFov();          // defined below
 	static float  WorldFov();                     // defined below (log only)
 	static void   UpdateVanillaRecoil(const Config& c, uintptr_t player); // defined below
 	static void   RestoreAimModels();           // defined below
@@ -199,6 +200,8 @@ namespace Bodycam
 	static LARGE_INTEGER g_lastShotTick{}; // last player weapon shot (Projectile::Launch hook)
 	static int   g_holdType = -2;          // Config hold type 0..4, -1 none; -2 = not yet read
 	static float g_holdAds = 0.0f, g_holdForward = 0.0f, g_holdDrop = 0.0f, g_lowReady = 0.0f;
+	static float g_lrLeftDeg = 0.0f;  // low ready swing still in the gun, in degrees (shot redirect)
+	static float g_sightDist = 0.0f; // eye to sight node along the view while aimed, 0 = not measured
 	static float g_fovBase = 0.0f, g_fovApplied = 0.0f, g_fovWritten = 0.0f;
 	static bool  g_fovOwned = false;
 	static float g_gunPeek = 0.0f; // -1..1
@@ -336,6 +339,7 @@ namespace Bodycam
 			HMODULE m = LoadLibraryA("xinput1_4.dll");
 			if (!m) m = LoadLibraryA("xinput9_1_0.dll");
 			if (m) s_get = reinterpret_cast<XInputGetStateFn>(GetProcAddress(m, "XInputGetState"));
+			CP_LOG("pad: XInput %s", s_get ? "loaded" : "NOT available - controller triggers will not count");
 		}
 		if (!s_get)
 			return s_pad;
@@ -353,6 +357,13 @@ namespace Bodycam
 				if (s_get(i, &st) == ERROR_SUCCESS)
 					s_slot = i;
 			s_nextScan = now.QuadPart + s_freq.QuadPart * 2;
+			static int s_loggedSlot = -2;
+			if (s_slot != s_loggedSlot)
+			{
+				s_loggedSlot = s_slot;
+				if (s_slot >= 0) CP_LOG("pad: controller on XInput slot %d", s_slot);
+				else             CP_LOG("pad: no XInput controller");
+			}
 		}
 		if (s_slot < 0)
 		{
@@ -364,7 +375,8 @@ namespace Bodycam
 		s_pad.lx   = st.Gamepad.sThumbLX / 32767.0f;
 		return s_pad;
 	}
-	static bool AimDown(const Config& c) { return KeyDown(c.aimKey) || ReadPad().aim; }
+	static bool g_gameAds = false; // world frustum narrowed by the game's ADS zoom (set in the camera update)
+	static bool AimDown(const Config& c) { return KeyDown(c.aimKey) || ReadPad().aim || (c.toggleAim && g_gameAds); }
 	static bool FireDown() { return KeyDown(VK_LBUTTON) || ReadPad().fire; }
 	static float Dot(const NiPoint3& a, const NiPoint3& b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 	static NiPoint3 Cross(const NiPoint3& a, const NiPoint3& b)
@@ -512,7 +524,9 @@ namespace Bodycam
 		reinterpret_cast<CtorFn>(g_base + Offsets::kRVA_BSFixedString_ctor)(&out, name);
 	}
 
-	enum MenuId { kMenu_Pipboy, kMenu_Pause, kMenu_Scope, kMenu_Workshop, kMenu_Count };
+	enum MenuId { kMenu_Pipboy, kMenu_Pause, kMenu_Scope, kMenu_Workshop,
+		kMenu_VATS, kMenu_Terminal, kMenu_TerminalHolotape, kMenu_Lockpicking, kMenu_Container,
+		kMenu_Barter, kMenu_Examine, kMenu_Cooking, kMenu_Looks, kMenu_Book, kMenu_Count };
 	static bool MenuOpen(MenuId id)
 	{
 		using IsOpenFn = bool (*)(void*, const FixedStringRef&);
@@ -528,6 +542,19 @@ namespace Bodycam
 			MakeFixedString(s_names[kMenu_Pause], "PauseMenu");
 			MakeFixedString(s_names[kMenu_Scope], "ScopeMenu");
 			MakeFixedString(s_names[kMenu_Workshop], "WorkshopMenu"); // settlement build mode
+			// 1.0.8: every other menu that takes over the view. Only the Pip-Boy, pause and workshop
+			// were covered, so VATS, hacking, lockpicking, crafting and trading kept the gun pose and
+			// the raised weapon FOV, and the Pip-Boy opened over a terminal came up off screen.
+			MakeFixedString(s_names[kMenu_VATS], "VATSMenu");
+			MakeFixedString(s_names[kMenu_Terminal], "TerminalMenu");
+			MakeFixedString(s_names[kMenu_TerminalHolotape], "TerminalHolotapeMenu");
+			MakeFixedString(s_names[kMenu_Lockpicking], "LockpickingMenu");
+			MakeFixedString(s_names[kMenu_Container], "ContainerMenu");
+			MakeFixedString(s_names[kMenu_Barter], "BarterMenu");
+			MakeFixedString(s_names[kMenu_Examine], "ExamineMenu"); // workbenches
+			MakeFixedString(s_names[kMenu_Cooking], "CookingMenu");
+			MakeFixedString(s_names[kMenu_Looks], "LooksMenu");
+			MakeFixedString(s_names[kMenu_Book], "BookMenu");
 			s_init = true;
 		}
 		auto isOpen = reinterpret_cast<IsOpenFn>(g_base + Offsets::kRVA_UI_IsMenuOpen);
@@ -536,7 +563,10 @@ namespace Bodycam
 
 	static bool SuspendingMenuOpen()
 	{
-		return MenuOpen(kMenu_Pipboy) || MenuOpen(kMenu_Pause) || MenuOpen(kMenu_Workshop);
+		for (int i = 0; i < kMenu_Count; ++i)
+			if (i != kMenu_Scope && MenuOpen(static_cast<MenuId>(i)))
+				return true;
+		return false;
 	}
 
 	// ==== crosshair follows the gun ===========================================================
@@ -1244,6 +1274,17 @@ namespace Bodycam
 				lean = -closeness;
 			else if (openSide != 0 && s_cancelSide != openSide)
 				lean = openSide * closeness;
+			// 1.0.8: squeezing through a gap. Walls close on BOTH sides straight out from the eye are
+			// a doorway or a narrow passage, not cover. The fan still found an edge on one side or the
+			// other each frame, so the lean swung the view left and right while walking through, and
+			// while aiming it read as the player being dragged. (The side probes above cannot tell:
+			// they angle forward, so square to a flat wall both hit it, which is ordinary cover.)
+			float gapL = 0.0f, gapR = 0.0f;
+			constexpr float kGap = 45.0f;
+			if (lean != 0.0f
+				&& RayCast::Cast(g_base, world, eye, eye - rightFlat * kGap, gapL)
+				&& RayCast::Cast(g_base, world, eye, eye + rightFlat * kGap, gapR))
+				lean = 0.0f;
 			peekTarget = c.tCornerPeek ? lean * (aiming ? 1.0f : c.peekHipScale) : 0.0f;
 		}
 
@@ -1344,6 +1385,7 @@ namespace Bodycam
 					CP_LOG("first-person skeleton swapped (0x%p -> 0x%p) - motion paused until re-hooked", rig, liveRig);
 					g_rigNode.store(nullptr);
 					ResetMotion();
+					ReleaseViewmodelFov();
 					g_active = false;
 					g_haveEyeInRig = false;
 					return;
@@ -1368,7 +1410,7 @@ namespace Bodycam
 			bool menuOpen = c.suspendInMenus && SuspendingMenuOpen();
 			if ((menuOpen ? 1 : 0) != g_prevMenuOpen)
 			{
-				CP_LOG("Pip-Boy/pause/workshop menu -> %s", menuOpen ? "open, fading out" : "closed");
+				CP_LOG("view-taking menu (Pip-Boy/pause/VATS/terminal/...) -> %s", menuOpen ? "open, fading out" : "closed");
 				g_prevMenuOpen = menuOpen ? 1 : 0;
 			}
 			ownCamera = ownCamera && !menuOpen;
@@ -1405,6 +1447,55 @@ namespace Bodycam
 			NiPoint3 rigHold = rigThisFrame ? g_rigHoldShift : NiPoint3{};
 			g_trueRot = Mul(Transposed(rigR), rawRot);
 
+			// The game steering the camera itself while still in first-person state: walking up to a
+			// terminal swings the view onto the screen, then our camera update stops being called
+			// with the terminal up, so whatever offset we last wrote stays frozen on it (OG, view
+			// sat 7 deg below the screen). Normally camera pitch = -player pitch to within 1 deg
+			// (logged: sums of -0.1..-0.4); the terminal swing read 4.6 then 12.4 within 0.2 s.
+			// Step aside at once rather than fade, so the camera is already vanilla when it freezes.
+			if (player && ownCamera)
+			{
+				float playerPitch = reinterpret_cast<NiPoint3*>(reinterpret_cast<uintptr_t>(player) + Offsets::kOff_REFR_rot)->x / kDegToRad;
+				float camPitch = std::asin(std::clamp(g_trueRot.Forward().z, -1.0f, 1.0f)) / kDegToRad;
+				// 3 deg was too tight: looking well up or down, normal play sits near 3 (logged 23.8 vs
+				// -20.8) and it flickered on and off, snapping the motion out each time. 8 on for two
+				// frames running, 4 off.
+				// Release only after 0.3 s back in line. Walking up to a terminal (AE) the camera reads
+				// exactly 0/0 for a frame just before the menu opens; letting go on that faded the motion
+				// back in 50 ms before the terminal took the view.
+				static bool s_steered = false;
+				static int s_over = 0;
+				static LARGE_INTEGER s_calmSince{};
+				LARGE_INTEGER tNow;
+				QueryPerformanceCounter(&tNow);
+				bool glitch = camPitch == 0.0f && playerPitch == 0.0f;
+				float gap = std::isfinite(playerPitch) ? std::fabs(playerPitch + camPitch) : 0.0f;
+				// The terminal swing also turns you toward the screen, and the pitch half alone came
+				// in late (8.4 deg of yaw lag already built up). Heading vs camera yaw logs within
+				// 0.1 in play, 2.6 at most.
+				float heading = reinterpret_cast<NiPoint3*>(reinterpret_cast<uintptr_t>(player) + Offsets::kOff_REFR_rot)->z;
+				if (std::isfinite(heading))
+					gap = std::max(gap, std::fabs(Wrap(YawOf(g_trueRot.Forward()) - heading)) / kDegToRad);
+				s_over = gap > 8.0f ? s_over + 1 : 0;
+				if (gap >= 4.0f || glitch)
+					s_calmSince.QuadPart = 0;
+				else if (s_calmSince.QuadPart == 0)
+					s_calmSince = tNow;
+				bool calm = s_calmSince.QuadPart != 0 && Seconds(s_calmSince, tNow) >= 0.3f;
+				bool steered = s_steered ? !calm : s_over >= 2;
+				if (steered != s_steered)
+				{
+					CP_LOG("camera %s (camera pitch %.1f vs player %.1f)", steered ? "steered by the game -> stepping aside" : "back under player control",
+						camPitch, playerPitch);
+					s_steered = steered;
+				}
+				if (steered)
+				{
+					ownCamera = false;
+					g_blend = 0.0f;
+				}
+			}
+
 			if (c.cameraFollowsRigShift >= 0)
 			{
 				g_shiftFollow = static_cast<float>(c.cameraFollowsRigShift);
@@ -1440,6 +1531,7 @@ namespace Bodycam
 			{
 				if (g_active)
 					ResetMotion();
+				ReleaseViewmodelFov();
 				g_active = false;
 				g_haveEyeInRig = false;
 				return;
@@ -1570,6 +1662,7 @@ namespace Bodycam
 				if (g_blend < 0.005f)
 				{
 					ResetMotion();
+					ReleaseViewmodelFov();
 					g_active = false;
 					g_haveEyeInRig = false;
 					return;
@@ -1677,7 +1770,10 @@ namespace Bodycam
 			float frR = WorldFrustumR();
 			if (frR > 0.0f)
 			{
-				if (g_frustumRest <= 0.0f || (!AimDown(c) && g_holdAds < 0.01f))
+				// Toggle aim mods release the key while the sights stay up, so read the game's own
+				// zoom; the rest width must not be learned from a zoomed frame then.
+				g_gameAds = g_frustumRest > 0.0f && frR < g_frustumRest * 0.95f;
+				if (g_frustumRest <= 0.0f || (!AimDown(c) && g_holdAds < 0.01f && !(c.toggleAim && g_gameAds)))
 					g_frustumRest = frR;
 				// Vanilla ADS narrows the frustum to 0.906 of rest (0.7603 vs 0.8391) and 1.0.6 was tuned
 				// with that in; only zoom past it counts, so the standard case is untouched.
@@ -1946,7 +2042,17 @@ namespace Bodycam
 
 			char wallLog[180]{};
 			bool aiming = c.enabled && AimDown(c);
-			UpdateWalls(c, dt, g_trueEye, fwdFlat, rightFlat, aiming, world, wallLog, sizeof(wallLog));
+			// Probe from the body, not the camera. Aimed, the peek's own sideways move goes through the
+			// rig and into the eye we read back, so the fan moved with the lean: standing still the
+			// corner closeness cycled 0.53 -> 0.19 -> 0.54 and the peek swung with it (OG, 1.0.8).
+			NiPoint3 probeEye = g_trueEye;
+			if (player)
+			{
+				const NiPoint3& body = *reinterpret_cast<NiPoint3*>(reinterpret_cast<uintptr_t>(player) + Offsets::kOff_REFR_pos);
+				probeEye.x = body.x;
+				probeEye.y = body.y;
+			}
+			UpdateWalls(c, dt, probeEye, fwdFlat, rightFlat, aiming, world, wallLog, sizeof(wallLog));
 
 			// Corner lean shift for the view, collision-clamped so it never enters geometry.
 			float camShift = g_camPeek * c.camPeekDist;
@@ -2147,7 +2253,7 @@ namespace Bodycam
 
 	// The player's equipped hand weapon -> hold type (-1 = none / thrown only). Instance keywords come
 	// first because weapon mods change them (a pipe gun's grip decides pistol vs rifle).
-	static int DetectHoldType(uintptr_t player, bool* hasScope = nullptr)
+	static int DetectHoldType(uintptr_t player, bool* hasScope = nullptr, bool* automatic = nullptr)
 	{
 		auto* proc = *reinterpret_cast<uint8_t**>(player + Offsets::kOff_Actor_middleProcess);
 		auto* data = proc ? *reinterpret_cast<uint8_t**>(proc + Offsets::kOff_Process_data08) : nullptr;
@@ -2171,6 +2277,8 @@ namespace Bodycam
 			// iron sights are ruled out by their own keyword.
 			if (hasScope)
 				*hasScope = has(Offsets::kKW_HasScope) && !has(Offsets::kKW_HasIronSights);
+			if (automatic)
+				*automatic = has(Offsets::kKW_WeaponTypeAutomatic);
 			if (has(Offsets::kKW_WeaponTypeMelee1H) || has(Offsets::kKW_WeaponTypeMelee2H)
 				|| has(Offsets::kKW_WeaponTypeUnarmed) || has(Offsets::kKW_WeaponTypeHandToHand))
 				return 4;
@@ -2182,9 +2290,9 @@ namespace Bodycam
 		return -1;
 	}
 
-	static int SafeDetectHoldType(uintptr_t player, bool* hasScope = nullptr)
+	static int SafeDetectHoldType(uintptr_t player, bool* hasScope = nullptr, bool* automatic = nullptr)
 	{
-		__try { return player ? DetectHoldType(player, hasScope) : -1; }
+		__try { return player ? DetectHoldType(player, hasScope, automatic) : -1; }
 		__except (EXCEPTION_EXECUTE_HANDLER) { return -1; }
 	}
 
@@ -2446,6 +2554,20 @@ namespace Bodycam
 		return cam ? *reinterpret_cast<float*>(cam + Offsets::kOff_PlayerCamera_fovWorld) : -1.0f;
 	}
 
+	// Hand the normal weapon FOV back when Bodycam stops driving (VATS, third person, scripted
+	// cameras, power armor swap). The rig hook stops running then, so nothing else would: the raised
+	// FOV stayed on and VATS, third person and the Pip-Boy were drawn with it.
+	static void ReleaseViewmodelFov()
+	{
+		if (g_fovOwned)
+		{
+			if (float* fov = LiveFov())
+				*fov = g_fovBase;
+			g_fovOwned = false;
+		}
+		g_fovApplied = 0.0f;
+	}
+
 	static void UpdateViewmodelFov(float offset, float dt, const Config& c)
 	{
 		float* fov = LiveFov();
@@ -2462,7 +2584,7 @@ namespace Bodycam
 
 		// Pip-Boy / pause: the Pip-Boy view reads this same FOV when it opens, so hand the normal
 		// value back instantly (the pause menu is also where saving and quitting happen).
-		bool release = SuspendingMenuOpen();
+		bool release = SuspendingMenuOpen() || g_camStateIdx != Offsets::kCameraState_FirstPerson;
 		if (!release)
 			g_fovApplied = Approach(g_fovApplied, offset, c.holdBlendRate, dt);
 		if (release || (std::fabs(offset) < 0.001f && std::fabs(g_fovApplied) < 0.02f))
@@ -2513,7 +2635,10 @@ namespace Bodycam
 	{
 		uintptr_t player = reinterpret_cast<uintptr_t>(*reinterpret_cast<void**>(g_base + Offsets::kRVA_g_player));
 		bool hasScope = false;
-		int type = ((!kWeaponHoldPaused && c.weaponHold) || c.holdProbe) ? SafeDetectHoldType(player, &hasScope) : -1;
+		// Holstered, the hands belong to whatever the game is animating - putting a fusion core into
+		// power armor pulled the arms off the body while the hold pose still shifted them.
+		const bool drawn = WeaponDrawn(player);
+		int type = drawn && ((!kWeaponHoldPaused && c.weaponHold) || c.holdProbe) ? SafeDetectHoldType(player, &hasScope) : -1;
 		static bool s_hadScope = false;
 		if (type != g_holdType || hasScope != s_hadScope)
 		{
@@ -2563,7 +2688,7 @@ namespace Bodycam
 		// Low ready: its own switch, any hand weapon, whether or not Weapon Hold is on. Down and to
 		// the left while idle or moving; up the moment you shoot, swing or aim, down again after the
 		// delay. Only turns and drops the gun - no forward push - so the arm-mesh stump stays hidden.
-		int lrType = c.lowReady ? (type >= 0 ? type : SafeDetectHoldType(player)) : -1;
+		int lrType = c.lowReady && drawn ? (type >= 0 ? type : SafeDetectHoldType(player)) : -1;
 		bool recentShot = g_lastShotTick.QuadPart != 0 && Seconds(g_lastShotTick, now) < c.lowReadyDelay;
 		// Toggle key: rising edge only, so holding it does not flicker. Off when the key is 0.
 		static bool s_lrHeld = false, s_lrKeyWas = false;
@@ -2577,8 +2702,19 @@ namespace Bodycam
 		if (c.lowReadyToggleKey <= 0)
 			s_lrHeld = false;
 		bool raised = aiming || recentShot || FireDown() || scoped || s_lrHeld;
+		// The sprint animation already swings rifles and shotguns across the body; the low ready
+		// turn on top of that put the stock in the camera (OG, 2026-09-26). Out by full sprint.
+		// First version faded from a quarter of the way jog->sprint: a normal run (260-380 on AE)
+		// spiked past it every few strides, and since the gun raises at 12/s and lowers at 1/s each
+		// spike popped it up and let it sink back - a shudder. Now near sprint speed only, eased the
+		// same both ways, and a cap on the low ready rather than a raise.
+		float sprintSpan = std::max(1.0f, c.sprint.speed - c.jog.speed);
+		float sprintK = std::clamp((g_bobSpeed - c.jog.speed - 0.6f * sprintSpan) / (0.3f * sprintSpan), 0.0f, 1.0f);
+		static float s_sprintFade = 0.0f;
+		s_sprintFade = Approach(s_sprintFade, sprintK, 3.0f, dt);
 		float lowTarget = (lrType >= 0 && !raised && !c.holdProbe) ? 1.0f : 0.0f;
 		g_lowReady = Approach(g_lowReady, lowTarget, lowTarget > g_lowReady ? c.lowReadyLowerRate : c.lowReadyRaiseRate, dt);
+		g_lowReady = std::min(g_lowReady, 1.0f - s_sprintFade);
 
 		// Sights distance while aiming, the per-type hip pose otherwise. Guns ship with hip at 0.
 		float hipW = 1.0f - g_holdAds;
@@ -2617,6 +2753,7 @@ namespace Bodycam
 			s_lrSide  = Approach(s_lrSide,  lr.lrSide,     c.holdBlendRate, dt);
 			s_lrArm   = Approach(s_lrArm,   lr.lrArmShare, c.holdBlendRate, dt);
 		}
+		g_lrLeftDeg = g_lowReady * std::max(std::fabs(s_lrYaw), std::fabs(s_lrPitch));
 
 		// One-time: a float window around PlayerCamera, looking for a first-person render FOV that
 		// is NOT the one at +0x16C. Anything near the world FOV, the weapon FOV or a plausible
@@ -2638,7 +2775,24 @@ namespace Bodycam
 		// Sights value while aiming, Hip FOV otherwise. This value is the whole first-person view's
 		// FOV, so the crosshair projection reads it live (see UpdateCrosshair) instead of trusting
 		// the cached frustum.
-		__try { UpdateViewmodelFov(h ? (h->fovOffset * scopeK * g_holdAds + h->hipFov * (1.0f - g_holdAds)) * wg : 0.0f, dt, c); }
+		// Drawn size goes with dist * tan(fov/2). A gun whose sights sit further out than the distance
+		// the boost was tuned at keeps that size by cutting the boost: never below the base FOV,
+		// never above the full setting.
+		float sightsFov = h ? h->fovOffset * scopeK : 0.0f;
+		if (h && h->sightsRefDist > 0.0f && g_sightDist > h->sightsRefDist && sightsFov > 0.0f && g_fovBase > 1.0f)
+		{
+			float tuned = std::tan((g_fovBase + sightsFov) * 0.5f * kDegToRad);
+			float want = 2.0f * std::atan(tuned * h->sightsRefDist / g_sightDist) / kDegToRad;
+			float cut = std::clamp(want - g_fovBase, 0.0f, sightsFov);
+			static LARGE_INTEGER s_autoLog{};
+			if (c.debugLog && g_holdAds > 0.95f && (s_autoLog.QuadPart == 0 || Seconds(s_autoLog, now) > 2.0f))
+			{
+				s_autoLog = now;
+				CP_LOG("sights fov: dist=%.1f ref=%.1f -> +%.1f instead of +%.1f", g_sightDist, h->sightsRefDist, cut, sightsFov);
+			}
+			sightsFov = cut;
+		}
+		__try { UpdateViewmodelFov(h ? (sightsFov * g_holdAds + h->hipFov * (1.0f - g_holdAds)) * wg : 0.0f, dt, c); }
 		__except (EXCEPTION_EXECUTE_HANDLER) {}
 
 		static LARGE_INTEGER s_lastLog{};
@@ -3058,7 +3212,10 @@ namespace Bodycam
 			// ("right" above) did not move it sideways at all in game.
 			NiPoint3 aimRightFlat = Normalized({ g_trueRot.Right().x, g_trueRot.Right().y, 0.0f });
 			NiPoint3 lowReadyShift = (aimRightFlat * hold.lrSide + kWorldUp * hold.lrDrop) * (g_lowReady * wg)
-				+ g_trueRot.Forward() * hold.hipForward + kWorldUp * hold.hipHeight + aimRightFlat * hold.hipSide;
+				+ g_trueRot.Forward() * hold.hipForward + kWorldUp * hold.hipHeight + aimRightFlat * hold.hipSide
+				// Iron Sights Distance. It sat in the full-rig shift below until 1.0.8, which moves the eye
+				// bone too: measured sight-to-eye 25.3 at push 16 and 24.0 at push 30, i.e. it never showed.
+				+ fwd * hold.forward;
 			static uint32_t s_lrLog = 0;
 			if (c.debugLog && g_lowReady > 0.05f && (s_lrLog++ % 120) == 0)
 				CP_LOG("low ready: amount=%.2f shift=(%.1f,%.1f,%.1f) side=%.1f height=%.1f yaw=%.1f rigSpace=%s",
@@ -3070,7 +3227,7 @@ namespace Bodycam
 				- fwdFlat * (g_retract * c.retractBack + g_recoil.gunBack)
 				- kWorldUp * (g_retract * c.retractDrop + g_landGunDip)) * wg
 				+ (right * g_peekEyeSide - kWorldUp * g_peekEyeDrop) * g_holdAds // aimed: the gun moves exactly with the view, so the sights stay on
-				+ fwd * hold.forward - up * hold.drop + right * hold.side
+				- up * hold.drop + right * hold.side
 				+ up * (c.sightsUpDown * g_holdAds * wg); // sights calibration (aiming only)
 
 			w.pos = pivot + r.Mul(w.pos - pivot) + shift;
@@ -3091,7 +3248,7 @@ namespace Bodycam
 
 			g_rigAppliedRot = r;
 			g_rigAppliedShift = shift - lowReadyShift; // the eye bone is held back, so the camera does not follow this part
-			g_rigHoldShift = lowReadyShift + fwd * hold.forward - up * hold.drop + right * hold.side
+			g_rigHoldShift = lowReadyShift - up * hold.drop + right * hold.side
 				+ up * (c.sightsUpDown * g_holdAds * wg);
 			// Safety net. Everything above feeds next frame's input, so one bad frame can
 			// compound instead of washing out. If what we are about to leave on the node is not
@@ -3160,6 +3317,40 @@ namespace Bodycam
 					}
 				}
 			}
+
+			// Sights distance probe: how far ahead of the eye the animation holds the sights, with our
+			// push taken out. Per-type fixed pushes overshoot on weapon packs with their own ADS
+			// animations (Combined Arms pistols); these numbers are for an auto distance.
+			// Sampled at 10 Hz from a quarter aimed, so the value is in before the FOV has ramped far.
+			if (g_holdAds > 0.25f)
+			{
+				static LARGE_INTEGER s_lastSight{}, s_lastSightLog{};
+				if (s_lastSight.QuadPart == 0 || Seconds(s_lastSight, now) > 0.1f)
+				{
+					s_lastSight = now;
+					NiAVObjectView* eyeB = FindNode(node, "Camera", 0);
+					NiAVObjectView* sight = FindNodeContaining(node, "Sight", 0);
+					if (!sight)
+						sight = FindNodeContaining(node, "Scope", 0);
+					if (eyeB && sight)
+					{
+						NiPoint3 d = sight->worldTransform.pos - eyeB->worldTransform.pos;
+						float along = Dot(d, fwd);
+						if (std::isfinite(along) && along > 1.0f && along < 200.0f)
+							g_sightDist = g_sightDist > 0.0f ? g_sightDist + (along - g_sightDist) * 0.5f : along;
+						if (c.debugLog && g_holdAds > 0.95f && (s_lastSightLog.QuadPart == 0 || Seconds(s_lastSightLog, now) > 1.0f))
+						{
+							s_lastSightLog = now;
+							CP_LOG("sights dist: '%s' along=%.1f side=%.1f up=%.1f | push=%.1f fovAdd=%.1f",
+								NodeName(sight), along, Dot(d, right), Dot(d, up), hold.forward, g_fovApplied);
+						}
+					}
+					else
+						g_sightDist = 0.0f;
+				}
+			}
+			else if (g_holdAds < 0.01f)
+				g_sightDist = 0.0f; // re-measured on the next aim, in case the weapon changed
 
 			// The rest of the low ready swing turns the gun alone, about its own origin in the right
 			// hand. UpdateWorldData here runs before the children, so a local write shows this frame.
@@ -3355,7 +3546,10 @@ namespace Bodycam
 		uint32_t formID = 0;
 		if (d->weapon[0])
 			formID = *reinterpret_cast<uint32_t*>(reinterpret_cast<uintptr_t>(d->weapon[0]) + Offsets::kOff_Form_formID);
-		int holdType = SafeDetectHoldType(reinterpret_cast<uintptr_t>(player));
+		bool automatic = false;
+		int holdType = SafeDetectHoldType(reinterpret_cast<uintptr_t>(player), nullptr, &automatic);
+		RecoilModel::g_shotAutomatic = automatic;
+		RecoilModel::g_shotPowerArmor = g_inPowerArmor == 1;
 		if (g_recoilHost.OnShot)
 			g_recoilHost.OnShot(formID, holdType, aiming);
 		else
@@ -3509,8 +3703,22 @@ namespace Bodycam
 		// aim correction can remove it. 1 = iron sights only, which keeps hip fire honest: the
 		// sight picture is a precision tool, shooting from the hip is not.
 		bool pinpointNow = (c.pinpoint == 2 || (c.pinpoint == 1 && aiming)) && !multiProjectile;
-		float useSpreadZ = (spreadOk && !pinpointNow) ? spreadZ : 0.0f;
-		float useSpreadX = (spreadOk && !pinpointNow) ? spreadX : 0.0f;
+		// Spamming a semi-auto on the sights put every round through one hole: the climb per shot is
+		// small and pinpoint took the scatter too. The first round of a string stays exact; each quick
+		// follow-up brings back a third of the weapon's spread. Automatics climb enough on their own.
+		float keep = pinpointNow ? 0.0f : 1.0f;
+		if (pinpointNow && !automatic && RecoilModel::g_burstShots > 1)
+			keep = std::clamp((RecoilModel::g_burstShots - 1) / 3.0f, 0.0f, 1.0f);
+		float useSpreadZ = spreadOk ? spreadZ * keep : 0.0f;
+		float useSpreadX = spreadOk ? spreadX * keep : 0.0f;
+		// ...but the game's aimed "spread" barely changes shot to shot (logged 0.93/-1.09,
+		// 0.94/-0.91, 1.03/-0.69), so bringing it back only moved the hole. Real scatter on top.
+		if (pinpointNow && !automatic && RecoilModel::g_burstShots > 1 && c.rapidFireScatterDeg > 0.0f)
+		{
+			float r = c.rapidFireScatterDeg * keep * kDegToRad;
+			useSpreadZ += r * RecoilModel::RandomSigned();
+			useSpreadX += r * RecoilModel::RandomSigned();
+		}
 		// Shots leave along the BARREL, not along a line from your eye to whatever the aim ray hits.
 		// 1.0.5 converged on that hit point, which made the crosshair exact at every range but also
 		// made shots ignore the barrel's pose - recoil and sway stopped moving the point of impact,
@@ -3523,10 +3731,12 @@ namespace Bodycam
 		// Out of the low ready the barrel still points at the floor for the first shot or two, even at
 		// max Raise Speed. Optional: send those to the aim point instead. g_lowReady eases out
 		// exponentially and never quite reaches 0, so a plain weight kept tugging every shot of a
-		// burst toward the crosshair and ate the recoil. Zero from 80% raised; full from 60% down.
+		// burst toward the crosshair and ate the recoil. Weighted by the degrees of swing still in the
+		// gun, not the fraction: at 20% a shotgun's 70 deg swing is still 14 deg, and a 1.0.7 log had
+		// second shots leaving 10-14 deg left of the view. Recoil is not in this figure, so it stays.
 		if (c.lowReadyShotRaised)
 		{
-			float w = std::clamp((g_lowReady - 0.2f) / 0.4f, 0.0f, 1.0f);
+			float w = std::clamp((g_lrLeftDeg - 1.5f) / 4.5f, 0.0f, 1.0f);
 			w = w * w * (3.0f - 2.0f * w);
 			if (w > 0.0f)
 				shotDir = Normalized(barrel + (aimFromMuzzle - barrel) * w);

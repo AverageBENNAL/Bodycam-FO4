@@ -107,6 +107,7 @@ namespace Offsets
 	constexpr uint32_t kKW_WeaponTypeShotgun    = 0x00226454;
 	constexpr uint32_t kKW_HasScope             = 0x0009F425; // on the instance once a scope mod is fitted
 	constexpr uint32_t kKW_HasIronSights        = 0x0016304F; // dn_HasScope_IronSights
+	constexpr uint32_t kKW_WeaponTypeAutomatic  = 0x0004A0A2; // on the instance for automatic receivers
 
 	constexpr uintptr_t kOff_REFR_extraDataList           = 0x100; // ExtraDataList* (GameReferences.h, sits after inventoryList @ 0xF8)
 	constexpr uintptr_t kOff_ExtraDataList_presence       = 0x18;  // PresenceBitfield* (GameExtraData.h, sizeof asserted 0x28)

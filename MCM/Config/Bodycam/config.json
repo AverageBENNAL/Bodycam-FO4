@@ -5,7 +5,7 @@
   "pluginRequirements": [],
   "content": [
     {
-      "text": "<font size=\"24\"><b>Bodycam</b></font> <font size=\"18\">v1.0.7</font>",
+      "text": "<font size=\"24\"><b>Bodycam</b></font> <font size=\"18\">v1.0.8</font>",
       "type": "text",
       "html": true
     },
@@ -56,6 +56,26 @@
           "text": "Motion Sickness Mode",
           "type": "switcher",
           "help": "<font size=\"15\">For anyone who gets motion sick. Camera lean, corner peek tilt and resting tilt drop to a quarter, footstep roll and all side-to-side walking sway are removed, and landing shake, recoil camera kick and the Free Aim view overshoot are halved. Default off.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "bControllerMode:Main",
+          "text": "Controller Mode",
+          "type": "switcher",
+          "help": "<font size=\"15\">For gamepad players. On a controller you spend more time standing and walking than shooting, so the low ready is what you see most, and at full swing it can look like the aim is drifting left. Default off.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "bToggleAim:Keys",
+          "text": "Toggle Aim",
+          "type": "switcher",
+          "help": "<font size=\"15\">Turn on if you use a toggle aim mod (tap to aim instead of holding). Bodycam then follows the game's own aim zoom instead of the held aim button, so the sights pose stays up after you let go. Default off.</font>",
           "html": true,
           "valueOptions": {
             "sourceType": "ModSettingBool"
@@ -260,6 +280,19 @@
               "Iron sights only",
               "Always (hip fire too)"
             ]
+          }
+        },
+        {
+          "id": "fRapidFireScatter:Look",
+          "text": "Rapid Fire Scatter",
+          "type": "slider",
+          "help": "<font size=\"15\">With the setting above on, the first shot lands exactly on the sights, but quick follow-up shots from a semi-auto gun scatter by up to this many degrees, building over three shots. Stops a spammed semi-auto putting every round through one hole. Default 1.5.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 5,
+            "step": 0.1,
+            "sourceType": "ModSettingFloat"
           }
         },
         {
@@ -557,12 +590,25 @@
           "id": "fPistolSightsForward:Hold",
           "text": "Iron Sights Distance",
           "type": "slider",
-          "help": "<font size=\"15\">How far out the gun sits when aiming down iron sights - more eye relief, smaller sight picture. Sights stay lined up. Default 55.</font>",
+          "help": "<font size=\"15\">How far out the gun sits when aiming down iron sights - more eye relief, smaller sight picture. Sights stay lined up. Default 0.</font>",
           "html": true,
           "valueOptions": {
-            "min": -5,
+            "min": -30,
             "max": 60,
             "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPistolSightsRefDist:Hold",
+          "text": "Auto Sights FOV Distance",
+          "type": "slider",
+          "help": "<font size=\"15\">For weapon packs whose aiming animations hold the gun further out (e.g. Combined Arms). Default 15.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 60,
+            "step": 0.5,
             "sourceType": "ModSettingFloat"
           }
         },
@@ -730,12 +776,25 @@
           "id": "fRifleSightsForward:Hold",
           "text": "Iron Sights Distance",
           "type": "slider",
-          "help": "<font size=\"15\">How far out the gun sits when aiming down iron sights - more eye relief, smaller sight picture. Sights stay lined up. Default 50.</font>",
+          "help": "<font size=\"15\">How far out the gun sits when aiming down iron sights - more eye relief, smaller sight picture. Sights stay lined up. Default 0.</font>",
           "html": true,
           "valueOptions": {
-            "min": -5,
+            "min": -30,
             "max": 60,
             "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fRifleSightsRefDist:Hold",
+          "text": "Auto Sights FOV Distance",
+          "type": "slider",
+          "help": "<font size=\"15\">For weapon packs whose aiming animations hold the gun further out (e.g. Combined Arms). Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 60,
+            "step": 0.5,
             "sourceType": "ModSettingFloat"
           }
         },
@@ -903,12 +962,25 @@
           "id": "fShotgunSightsForward:Hold",
           "text": "Iron Sights Distance",
           "type": "slider",
-          "help": "<font size=\"15\">How far out the gun sits when aiming down iron sights - more eye relief, smaller sight picture. Sights stay lined up. Default 40.</font>",
+          "help": "<font size=\"15\">How far out the gun sits when aiming down iron sights - more eye relief, smaller sight picture. Sights stay lined up. Default 0.</font>",
           "html": true,
           "valueOptions": {
-            "min": -5,
+            "min": -30,
             "max": 60,
             "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fShotgunSightsRefDist:Hold",
+          "text": "Auto Sights FOV Distance",
+          "type": "slider",
+          "help": "<font size=\"15\">For weapon packs whose aiming animations hold the gun further out (e.g. Combined Arms). Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 60,
+            "step": 0.5,
             "sourceType": "ModSettingFloat"
           }
         },
@@ -1076,12 +1148,25 @@
           "id": "fHeavySightsForward:Hold",
           "text": "Iron Sights Distance",
           "type": "slider",
-          "help": "<font size=\"15\">How far out the gun sits when aiming down iron sights - more eye relief, smaller sight picture. Sights stay lined up. Default 20.</font>",
+          "help": "<font size=\"15\">How far out the gun sits when aiming down iron sights - more eye relief, smaller sight picture. Sights stay lined up. Default 0.</font>",
           "html": true,
           "valueOptions": {
-            "min": -5,
+            "min": -30,
             "max": 60,
             "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHeavySightsRefDist:Hold",
+          "text": "Auto Sights FOV Distance",
+          "type": "slider",
+          "help": "<font size=\"15\">For weapon packs whose aiming animations hold the gun further out (e.g. Combined Arms). Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 60,
+            "step": 0.5,
             "sourceType": "ModSettingFloat"
           }
         },
@@ -1249,12 +1334,25 @@
           "id": "fMeleeSightsForward:Hold",
           "text": "Iron Sights Distance",
           "type": "slider",
-          "help": "<font size=\"15\">How far out the gun sits when aiming down iron sights - more eye relief, smaller sight picture. Sights stay lined up. Default 15.</font>",
+          "help": "<font size=\"15\">How far out the gun sits when aiming down iron sights - more eye relief, smaller sight picture. Sights stay lined up. Default 0.</font>",
           "html": true,
           "valueOptions": {
-            "min": -5,
+            "min": -30,
             "max": 60,
             "step": 1,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fMeleeSightsRefDist:Hold",
+          "text": "Auto Sights FOV Distance",
+          "type": "slider",
+          "help": "<font size=\"15\">For weapon packs whose aiming animations hold the gun further out (e.g. Combined Arms). Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 60,
+            "step": 0.5,
             "sourceType": "ModSettingFloat"
           }
         },
@@ -1372,7 +1470,7 @@
           "id": "bCameraTilt:Main",
           "text": "Resting Camera Tilt",
           "type": "switcher",
-          "help": "<font size=\"15\">Applies the constant resting tilt set below. Off = level resting horizon. Default on.</font>",
+          "help": "<font size=\"15\">Applies the constant resting tilt set below. Off = level resting horizon. Default off.</font>",
           "html": true,
           "valueOptions": {
             "sourceType": "ModSettingBool"
@@ -2320,6 +2418,32 @@
           "text": "Rifle / SMG Climb",
           "type": "slider",
           "help": "<font size=\"15\">Degrees of climb per shot. Lower than a pistol because it is shouldered. Default 3.7.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 25,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fPowerArmor:Recoil",
+          "text": "Power Armor Recoil",
+          "type": "slider",
+          "help": "<font size=\"15\">All recoil x this while in power armor - the frame takes the kick. 1 = the same as out of it. Default 0.3.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fAutoRifleClimbDeg:Recoil",
+          "text": "Automatic Rifle Climb",
+          "type": "slider",
+          "help": "<font size=\"15\">Degrees of climb per shot for rifles and SMGs with an automatic receiver. Lower than Rifle / SMG Climb because every round stacks on the last, so a burst still climbs. Default 2.5.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,

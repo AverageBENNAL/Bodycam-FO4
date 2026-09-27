@@ -23,6 +23,8 @@ namespace RecoilModel
 	inline Axis g_pitch, g_yaw, g_roll, g_back;   // the weapon: fast and sharp
 	inline Axis g_camPitch, g_camYaw, g_camRoll;  // the view: medium, chasing the weapon
 	inline uint32_t g_rng = 0xB0D1CA4Du;
+	inline bool g_shotPowerArmor = false;
+	inline bool g_shotAutomatic = false; // set by the Launch hook just before OnShot (keeps the add-on API as it is)
 	// Camera rattle: a body-mounted camera does not glide through a gunshot, it jolts. Short,
 	// sharp and high-frequency, on the VIEW only, over the top of the smooth spring.
 	inline float g_rattleAmp = 0.0f, g_rattleAge = 1.0f;
@@ -137,8 +139,8 @@ namespace RecoilModel
 		++g_shots;
 
 		const int t = std::clamp(type, 0, Config::kHoldTypes - 1);
-		const Config::RecoilProfile& p = c.recoilType[t];
-		const float ads = aiming ? c.recoilAdsScale : 1.0f;
+		const Config::RecoilProfile& p = (t == 1 && g_shotAutomatic) ? c.recoilAutoRifle : c.recoilType[t];
+		const float ads = (aiming ? c.recoilAdsScale : 1.0f) * (g_shotPowerArmor ? c.recoilPowerArmor : 1.0f);
 		// Every shot used to deliver exactly the same vertical impulse, so a burst climbed in a
 		// perfectly repeatable staircase - the metronomic quality that stops recoil feeling chaotic.
 		// One multiplier, shared by the climb, the aim and the punch, so a hot shot is hot in every

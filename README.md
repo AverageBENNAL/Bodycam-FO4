@@ -39,13 +39,13 @@ If you used the earlier **CornerPeek** test build, disable or remove it. Bodycam
 
 Open **Mod Config -> Bodycam**:
 
-- **General**: enable/disable (fades smoothly), intensity preset (Subtle x0.6 / Default x1.0 / Intense x1.5; scales all motion, sliders still apply on top), Free Aim, Shots Follow.
+- **General**: enable/disable (fades smoothly), intensity preset (Subtle x0.6 / Default x1.0 / Intense x1.5; scales all motion, sliders still apply on top), Motion Sickness Mode, Controller Mode, Toggle Aim, Free Aim, Shots Follow.
 - **Free Aim**: box size, recenter speed, gun speed, hit marker, sight-accurate shots.
-- **Weapon Hold**: per weapon type hip pose, hip raise on fire, iron sights distance, sights and hip FOV, and Low Ready pose.
+- **Weapon Hold**: per weapon type hip pose, hip raise on fire, iron sights distance, sights and hip FOV, auto sights FOV distance, and Low Ready pose.
 - **Look & Lean**: view lag, camera lean, resting gun tilt, gun lean, lean response.
 - **Corner Peek**: automatic lean out from cover, angles and hip fire lean.
 - **Gun Handling**: weapon inertia, gun drag, resting gun pose.
-- **Recoil**: per weapon type climb, aiming multiplier, spring speeds.
+- **Recoil**: per weapon type climb, automatic rifle climb, power armor recoil, aiming multiplier, spring speeds.
 - **Movement**: bob, side shift and stride sway per pace, footstep impact, breathing, jumping and landing.
 - **Advanced**: pace speeds, walls & corners, direction fixes, keys, troubleshooting toggles.
 
