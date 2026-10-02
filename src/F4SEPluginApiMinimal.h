@@ -84,3 +84,13 @@ struct F4SEMessagingInterface
 	bool (*RegisterListener)(PluginHandle listener, const char* sender, EventCallback handler);
 	bool (*Dispatch)(PluginHandle sender, UInt32 messageType, void* data, UInt32 dataLen, const char* receiver);
 };
+
+// F4SEPapyrusInterface (F4SE 0.7.9). The callback runs once the script VM exists.
+struct F4SEPapyrusInterface
+{
+	enum { kInterface_Papyrus = 3 };
+	typedef bool (*RegisterFunctions)(void* vm);
+
+	UInt32 interfaceVersion;
+	bool (*Register)(RegisterFunctions callback);
+};

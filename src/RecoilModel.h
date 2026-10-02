@@ -186,10 +186,23 @@ namespace RecoilModel
 		dt = std::clamp(dt, 0.001f, 0.05f);
 
 		// The aim: slow, so consecutive shots stack into a climb you have to pull down against.
+		const float prevAimPitch = g_aimPitch.x, prevAimYaw = g_aimYaw.x;
 		Spring(g_aimPitch, 0.0f, c.recoilAimHz, c.recoilAimDamping, dt);
 		Spring(g_aimYaw,   0.0f, c.recoilAimHz, c.recoilAimDamping, dt);
 		ClampAxis(g_aimPitch, 0.0f, c.recoilMaxPitch);
 		ClampAxis(g_aimYaw, -c.recoilMaxYaw, c.recoilMaxYaw);
+		// No recovery: hand out only this frame's rise, which the caller writes into the player's
+		// rotation. x > 0 keeps the underdamped ring back up from below rest out of it.
+		float bakePitch = 0.0f, bakeYaw = 0.0f;
+		if (!c.recoilAimRecovery)
+		{
+			const float dp = g_aimPitch.x - prevAimPitch;
+			if (dp > 0.0f && g_aimPitch.x > 0.0f)
+			{
+				bakePitch = dp;
+				bakeYaw = g_aimYaw.x - prevAimYaw;
+			}
+		}
 
 		// The weapon: fast and sharp, recovering to rest.
 		Spring(g_pitch, 0.0f, c.recoilHz, c.recoilDamping, dt);
@@ -241,8 +254,8 @@ namespace RecoilModel
 
 		// Aim: what the bullets follow. Both the view and the weapon are built from it, so the
 		// two kick terms below are what each gets ON TOP.
-		out->aimPitchUpDeg = g_aimPitch.x;
-		out->aimYawDeg     = g_aimYaw.x;
+		out->aimPitchUpDeg = c.recoilAimRecovery ? g_aimPitch.x : bakePitch;
+		out->aimYawDeg     = c.recoilAimRecovery ? g_aimYaw.x : bakeYaw;
 
 		out->gunPitchUpDeg = g_pitch.x * c.recoilGunKick + settle * 0.6f;
 		out->gunYawDeg     = g_yaw.x * c.recoilGunKick;

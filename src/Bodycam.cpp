@@ -6,6 +6,7 @@
 #include "Logger.h"
 #include "BodycamRecoilAPI.h"
 #include "RecoilModel.h"
+#include "Presets.h"
 
 #include <windows.h>
 #include <xinput.h>
@@ -252,6 +253,7 @@ namespace Bodycam
 	}
 	static float      g_breathPhase = 0.0f;               // integrated: the rate varies by gait
 	static NiPoint3   g_bobOffset{};     // chest bob applied to the view, in world space
+static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which the gun does not take
 	static float      g_viewRollDeg = 0.0f; // total screen lean applied this frame (signed, blended)
 	static float      g_gunRollDeg = 0.0f;  // total gun lean applied (for the log)
 	static NiPoint3   g_peekEyeShift{};     // sideways move of the view from the corner peek, this frame
@@ -400,6 +402,8 @@ namespace Bodycam
 		while (a < -kPi) a += kTwoPi;
 		return a;
 	}
+	static float HeadingOf(const NiPoint3& d) { return std::atan2(d.x, d.y); }
+	static float PitchDownOf(const NiPoint3& d) { return -std::asin(std::clamp(d.z, -1.0f, 1.0f)); }
 	static float Approach(float current, float target, float rate, float dt)
 	{
 		return current + (target - current) * (1.0f - std::exp(-rate * dt));
@@ -1591,9 +1595,21 @@ namespace Bodycam
 			}
 			if (c.enabled && ownCamera)
 			{
+				NiPoint3 before = g_trueRot.Forward();
 				NiPoint3 recoilRight = Normalized(g_trueRot.Right());
 				g_trueRot = Mul(AxisAngle(kWorldUp, g_recoil.aimYawDeg * kDegToRad),
 					Mul(AxisAngle(recoilRight, g_recoil.aimPitchUpDeg * kDegToRad), g_trueRot));
+				// Aim Recovery off: the pose above is only this frame's rise, so it also goes into the
+				// player's own rotation and the game camera starts from it next frame. Read back off
+				// the forward vector rather than signed by hand, so it matches the game's conventions.
+				if (!c.recoilAimRecovery && !g_recoilHost.Update && player
+					&& (g_recoil.aimPitchUpDeg != 0.0f || g_recoil.aimYawDeg != 0.0f))
+				{
+					NiPoint3 after = g_trueRot.Forward();
+					auto* rot = reinterpret_cast<NiPoint3*>(reinterpret_cast<uintptr_t>(player) + Offsets::kOff_REFR_rot);
+					rot->x = std::clamp(rot->x + (PitchDownOf(after) - PitchDownOf(before)), -1.55f, 1.55f);
+					rot->z = Wrap(rot->z + Wrap(HeadingOf(after) - HeadingOf(before)));
+				}
 			}
 
 			// Where the eye sits in the rig's own space, measured from the rig update that ran
@@ -2032,8 +2048,8 @@ namespace Bodycam
 			// (two dips per full left+right cycle), mean-centred so the view doesn't sink overall.
 			float footfall = (std::fabs(std::sin(g_phase)) - 0.6366f) * 2.0f;
 			g_breathPhase = std::fmod(g_breathPhase + kTwoPi * gbHz * dt, kTwoPi);
-			float bobV = footfall * gv * standFade + stepKick + jumpKick + crouchKick + launchKick
-				+ std::sin(g_breathPhase) * gbAmp;
+			float breathV = std::sin(g_breathPhase) * gbAmp;
+			float bobV = footfall * gv * standFade + stepKick + jumpKick + crouchKick + launchKick + breathV;
 			float bobL = std::sin(g_phase) * gl * standFade;
 			float bobRoll = std::sin(g_phase) * c.bobRollDeg * standFade;
 			// Stride sway (view only): swing and tilt toward the planted foot, once per left+right cycle.
@@ -2157,6 +2173,7 @@ namespace Bodycam
 			}
 
 			g_bobOffset = (rightFlat * bobL + kWorldUp * bobV) * (k * wv);
+			g_breathOffset = kWorldUp * (breathV * k * wv);
 			g_viewRot = view;
 			// Recoil punch: the shot shoves the eye back along the view and a touch up. Only the
 			// built-in model supplies this - an external add-on drives the pose struct, which has no
@@ -3221,7 +3238,8 @@ namespace Bodycam
 				CP_LOG("low ready: amount=%.2f shift=(%.1f,%.1f,%.1f) side=%.1f height=%.1f yaw=%.1f rigSpace=%s",
 					g_lowReady, lowReadyShift.x, lowReadyShift.y, lowReadyShift.z, hold.lrSide, hold.lrDrop,
 					hold.yawDeg, localSpace ? "camera-relative" : "world");
-			NiPoint3 shift = lowReadyShift + (g_bobOffset * c.gunBobScale
+			// Breathing stays out of the gun: standing still it rocked the sights enough to miss with a pistol.
+			NiPoint3 shift = lowReadyShift + ((g_bobOffset - g_breathOffset) * c.gunBobScale
 				+ g_inertia + swingSlide
 				+ right * (g_gunPeek * c.gunPeekDist * (1.0f - g_holdAds))
 				- fwdFlat * (g_retract * c.retractBack + g_recoil.gunBack)
@@ -3374,6 +3392,35 @@ namespace Bodycam
 				}
 			}
 
+			// Pip-Boy light (vanilla and Pip-Boy Flashlight, nexus 10840) hangs off the Pip-Boy's
+			// 'AttachLight' node on the left arm, so it took the whole rig rotation: in low ready it
+			// lit the floor. Undo r on that node so the beam stays on the view. Same local-write
+			// bookkeeping as the gun above.
+			{
+				static NiAVObjectView* s_light = nullptr;
+				static NiMatrix43 s_written{}, s_applied{};
+				NiAVObjectView* light = FindNodeContaining(node, "AttachLight", 0);
+				auto* lightParent = light ? *reinterpret_cast<NiAVObjectView**>(reinterpret_cast<uintptr_t>(light) + 0x28) : nullptr;
+				if (light && lightParent)
+				{
+					static bool s_logged = false;
+					if (!s_logged && c.debugLog)
+					{
+						s_logged = true;
+						CP_LOG("pipboy light: '%s' under '%s'", NodeName(light), NodeName(lightParent));
+					}
+					NiMatrix43 local = ToColumnForm(light->localTransform.rot);
+					bool ours = light == s_light && std::memcmp(&light->localTransform.rot, &s_written, sizeof(s_written)) == 0;
+					NiMatrix43 base = ours ? Mul(Transposed(s_applied), local) : local;
+					NiMatrix43 p = ToColumnForm(lightParent->worldTransform.rot);
+					NiMatrix43 undo = Mul(Transposed(p), Mul(Transposed(r), p)); // r^-1 in the parent's frame
+					light->localTransform.rot = ToGameForm(Mul(undo, base));
+					s_light = light;
+					s_written = light->localTransform.rot;
+					s_applied = undo;
+				}
+			}
+
 			g_rigAppliedTick = now;
 			g_rigWritten = w;
 			g_rigWrittenTick = now;
@@ -3500,8 +3547,6 @@ namespace Bodycam
 		return nullptr;
 	}
 
-	static float HeadingOf(const NiPoint3& d) { return std::atan2(d.x, d.y); }
-	static float PitchDownOf(const NiPoint3& d) { return -std::asin(std::clamp(d.z, -1.0f, 1.0f)); }
 
 	static void AdjustLaunch(LaunchDataView* d, uintptr_t retRva)
 	{
@@ -3522,7 +3567,18 @@ namespace Bodycam
 			// affine the rig hook applied, inverted. The game's aim and its lob arc are whatever
 			// vanilla would have produced, so nothing here has to know how a throw is aimed - the
 			// same "immune to the gun pose by construction" rule as g_muzzleDelta.
-			if (!SafeThrownEquipped(reinterpret_cast<uintptr_t>(player)))
+			// The equipped check alone missed throws made with a gun drawn (Nexus report, 1.0.8: molotovs
+			// went where the lowered pistol pointed). Anything else the player launches from within
+			// arm's reach of the eye is a throw too; projectiles spawned by other projectiles start
+			// wherever the parent was, well away from the hand.
+			bool thrown = SafeThrownEquipped(reinterpret_cast<uintptr_t>(player));
+			float fromEye = Length(d->origin - g_trueEye);
+			if (!thrown && fromEye < 150.0f)
+				thrown = true;
+			if (c.debugLog)
+				CP_LOG("launch: caller=+0x%llX thrown=%d fromEye=%.0f z=%.2f x=%.2f", static_cast<unsigned long long>(retRva),
+					thrown ? 1 : 0, fromEye, d->zAngle / kDegToRad, d->xAngle / kDegToRad);
+			if (!thrown)
 				return;
 			NiMatrix43 applied = g_rigAppliedRot;
 			NiPoint3 dir{ std::sin(d->zAngle) * std::cos(d->xAngle),
@@ -3897,6 +3953,8 @@ namespace Bodycam
 	{
 		static unsigned long long lastStamp = Config::Stamp();
 		unsigned long long stamp = Config::Stamp();
+		if (Presets::Poll(stamp != lastStamp))
+			stamp = Config::Stamp(); // a loaded preset rewrote the file
 		if (stamp != lastStamp)
 		{
 			lastStamp = stamp;

@@ -122,6 +122,9 @@ struct Config
 	// within ~50 ms, faster than the gap between rounds, so an aim riding the weapon's curve can
 	// never accumulate into a climb.
 	float recoilAimHz      = 1.25f;
+	// Off: the climb is written into the player's own aim and stays there until you pull it down.
+	// Only the rise is kept - the spring's way back down is thrown away.
+	bool  recoilAimRecovery = true;
 	float recoilAimDamping = 0.75f; // matches the weapon spring; measured Bodycam aim tracks it
 	float recoilCameraHz      = 3.5f;  // measured: the view moves WITH the weapon, not behind it
 	float recoilCameraDamping = 0.75f;
@@ -533,6 +536,7 @@ struct Config
 		f("Recoil", "fSpringHz", recoilHz);
 		f("Recoil", "fDamping", recoilDamping);
 		f("Recoil", "fAimHz", recoilAimHz);
+		b("Recoil", "bAimRecovery", recoilAimRecovery);
 		f("Recoil", "fAimDamping", recoilAimDamping);
 		f("Recoil", "fCameraHz", recoilCameraHz);
 		f("Recoil", "fCameraDamping", recoilCameraDamping);

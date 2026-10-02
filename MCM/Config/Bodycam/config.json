@@ -37,19 +37,57 @@
           }
         },
         {
-          "id": "iPreset:Main",
-          "text": "Intensity Preset",
+          "text": "My Presets",
+          "type": "section"
+        },
+        {
+          "id": "sName:Presets",
+          "text": "Preset Name",
+          "type": "textinput",
+          "help": "<font size=\"15\">Type a name, then press Save Preset. Saving under a name that already exists replaces it.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingString"
+          }
+        },
+        {
+          "text": "Save Preset",
+          "type": "button",
+          "help": "Saves every setting as it is right now under the name above. The file goes to Data\\F4SE\\Bodycam Presets (your MO2 overwrite folder).",
+          "action": {
+            "type": "CallGlobalFunction",
+            "script": "BodycamPresets",
+            "function": "Save"
+          }
+        },
+        {
+          "id": "iPick:Presets",
+          "text": "Saved Presets",
           "type": "dropdown",
-          "help": "<font size=\"15\">Scales all motion at once: view lag, camera lean, bob, sway and extra gun lean. Your individual sliders still apply on top.</font>",
+          "help": "<font size=\"15\">Pick one, then press Apply Preset. Subtle, Default and Intense are the stock settings at three strengths; below them are the .ini files in Data/F4SE/Bodycam Presets, yours and downloaded ones.</font>",
           "html": true,
           "valueOptions": {
             "sourceType": "ModSettingInt",
             "options": [
-              "Subtle (x0.6)",
-              "Default (x1.0)",
-              "Intense (x1.5)"
+              "Subtle",
+              "Default",
+              "Intense"
             ]
           }
+        },
+        {
+          "text": "Apply Preset",
+          "type": "button",
+          "help": "Sets every slider and switch to the preset picked above. On Next-Gen and Old-Gen the menu keeps showing the old numbers until the game is restarted.",
+          "action": {
+            "type": "CallGlobalFunction",
+            "script": "BodycamPresets",
+            "function": "Load"
+          }
+        },
+        {
+          "text": "Comfort",
+          "type": "section"
         },
         {
           "id": "bNoSideMotion:Bob",
@@ -1717,7 +1755,7 @@
           "id": "fCantStrafeDeg:GunMotion",
           "text": "Gun Lean From Strafing",
           "type": "slider",
-          "help": "<font size=\"15\">Extra gun cant when strafing, scaled by the Intensity Preset. Negative leans the other way. Default 4.5.</font>",
+          "help": "<font size=\"15\">Extra gun cant when strafing, scaled by the Subtle / Default / Intense strength. Negative leans the other way. Default 4.5.</font>",
           "html": true,
           "valueOptions": {
             "min": -15,
@@ -2299,6 +2337,16 @@
             "max": 1.2,
             "step": 0.05,
             "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "bAimRecovery:Recoil",
+          "text": "Aim Recovery",
+          "type": "switcher",
+          "help": "<font size=\"15\">On, your aim drifts back down after the climb. Off, the climb stays where it put you and you pull it down yourself. Default on.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
           }
         },
         {
