@@ -1,39 +1,66 @@
 #pragma once
-// Two native functions on the BodycamPresets script, so a loaded preset can be pushed into MCM
-// through MCM's own setters and its sliders show the new numbers without a restart.
+// Native functions on the BodycamPresets script, so a preset can be pushed into MCM through MCM's
+// own setters and its sliders and the Preset Name box show the new values without a restart.
 //
-//   float Begin()  reads the picked preset; returns how many values follow, 0 if there is none
-//   float Next()   the next value, in the order of the shipped settings.ini
+//   float Begin()      reads the preset named in the box; returns how many values follow, 0 if
+//                      there is no such preset, -1 while an earlier Apply is still running
+//   float Value()      the next value, in the order of the shipped settings.ini
+//   string NextName()  the preset after the one in the box
+//   string PrevName()  the one before
 //
 // No arguments on purpose: reading them means walking the VM stack, and this way the only game
-// code touched is the NativeFunction constructor and the four base-class helpers below.
+// code touched is the NativeFunction constructor, the four base-class helpers below and the
+// string constructor.
 //
-// AE 1.11.240 only. Offsets are from F4SE 0.7.9 (PapyrusNativeFunctions.h); the class layout and
-// the virtual order have to match it exactly. The other two builds keep the file-only load.
+// Offsets are from F4SE's PapyrusNativeFunctions.h and GameTypes.h for each runtime (0.7.9, 0.7.2,
+// 0.6.23); the class layout and the virtual order are the same in all three and have to match
+// exactly. Run on AE. The Next-Gen functions are byte for byte the AE ones in a decrypted 1.10.984
+// image. The Old-Gen numbers are read off the source only.
 #include "F4SEPluginApiMinimal.h"
 #include "Logger.h"
 #include "Presets.h"
 #include <windows.h>
 #include <cstdint>
-
-#if !defined(BODYCAM_OG) && !defined(BODYCAM_NG)
-#define BODYCAM_PAPYRUS_BRIDGE 1
+#include <string>
 
 namespace PapyrusBridge
 {
+#if defined(BODYCAM_OG)
+	// 1.10.163: GetParam is still ParameterInfo's own member there, called on m_params (+0x30)
+	constexpr uintptr_t kImplGetParam      = 0x0270DE00;
+	constexpr uintptr_t kGetParamThis      = 0x30;
+	constexpr uintptr_t kImplInvoke        = 0x0270D550;
+	constexpr uintptr_t kImplGetSourceFile = 0x0270D420;
+	constexpr uintptr_t kImplGetParamName  = 0x0270D440;
+	constexpr uintptr_t kImplCtor          = 0x0270DA50;
+	constexpr uintptr_t kImplDtor          = 0x0270DC70;
+	constexpr uintptr_t kStringCtor        = 0x01B41D40; // StringCache::Ref(const char*)
+#elif defined(BODYCAM_NG)
+	constexpr uintptr_t kImplGetParam      = 0x0200B040;
+	constexpr uintptr_t kGetParamThis      = 0;
+	constexpr uintptr_t kImplInvoke        = 0x01FA40B0;
+	constexpr uintptr_t kImplGetSourceFile = 0x01FA4010;
+	constexpr uintptr_t kImplGetParamName  = 0x01FA4030;
+	constexpr uintptr_t kImplCtor          = 0x01FA4620;
+	constexpr uintptr_t kImplDtor          = 0x01FA4810;
+	constexpr uintptr_t kStringCtor        = 0x01561AD0; // StringCache::Ref(const char*)
+#else
 	constexpr uintptr_t kImplGetParam      = 0x021681E0;
+	constexpr uintptr_t kGetParamThis      = 0;
 	constexpr uintptr_t kImplInvoke        = 0x021012A0;
 	constexpr uintptr_t kImplGetSourceFile = 0x02101200;
 	constexpr uintptr_t kImplGetParamName  = 0x02101220;
 	constexpr uintptr_t kImplCtor          = 0x02101810;
 	constexpr uintptr_t kImplDtor          = 0x02101A00;
+	constexpr uintptr_t kStringCtor        = 0x0167C1E0; // StringCache::Ref(const char*)
+#endif
 
 	// VirtualMachine vtable slots
 	constexpr size_t kVmRegisterFunction = 0x1B;
 	constexpr size_t kVmSetFunctionFlags = 0x1D;
 	constexpr UInt32 kFunctionFlagNoWait = 1;
 
-	constexpr uint64_t kTypeNone = 0, kTypeInt = 3, kTypeFloat = 4, kTypeBool = 5;
+	constexpr uint64_t kTypeNone = 0, kTypeString = 2, kTypeInt = 3, kTypeFloat = 4, kTypeBool = 5;
 
 	struct VMValue
 	{
@@ -64,7 +91,8 @@ namespace PapyrusBridge
 		virtual uint64_t GetNumParams()                 { return m_realNumParams; }
 		virtual uint64_t GetParam(UInt32 idx, void** outName, uint64_t* outType)
 		{
-			return GameFn<uint64_t (*)(NativeFunction*, UInt32, void**, uint64_t*)>(kImplGetParam)(this, idx, outName, outType);
+			void* self = reinterpret_cast<uint8_t*>(this) + kGetParamThis;
+			return GameFn<uint64_t (*)(void*, UInt32, void**, uint64_t*)>(kImplGetParam)(self, idx, outName, outType);
 		}
 		virtual uint64_t GetNumParams2()                { return m_numParams; }
 		virtual bool     IsNative()                     { return true; }
@@ -136,20 +164,81 @@ namespace PapyrusBridge
 		float (*m_fn)();
 	};
 
-	inline bool Register(void* vm)
+	// The game's string constructor takes the pooled entry and one reference to it, which the VM
+	// gives back when it drops the value. Kept apart so a bad offset faults in here and is caught.
+	inline bool MakeString(void* slot, const char* text)
+	{
+		__try
+		{
+			GameFn<void* (*)(void*, const char*)>(kStringCtor)(slot, text);
+			return true;
+		}
+		__except (EXCEPTION_EXECUTE_HANDLER)
+		{
+			return false;
+		}
+	}
+
+	class StringFunction final : public NativeFunction
+	{
+	public:
+		StringFunction(const char* fnName, const char* className, std::string (*fn)())
+			: NativeFunction(fnName, className), m_fn(fn)
+		{
+			m_retnType = kTypeString;
+			m_callback = reinterpret_cast<void*>(fn);
+		}
+		bool Run(VMValue*, void*, UInt32, VMValue* result, void*) override
+		{
+			const std::string v = m_fn();
+			if (result->type != kTypeNone && result->type != kTypeInt && result->type != kTypeFloat && result->type != kTypeBool)
+				return false;
+			result->data.p = nullptr;
+			if (!MakeString(&result->data, v.c_str()))
+			{
+				result->data.p = nullptr;
+				return false;
+			}
+			result->type = kTypeString;
+			return true;
+		}
+
+	private:
+		std::string (*m_fn)();
+	};
+
+	inline void RegisterAll(void* vm)
 	{
 		static const char* kScript = "BodycamPresets";
-		struct Entry { const char* name; float (*fn)(); };
-		const Entry entries[] = { { "Begin", &Presets::BridgeBegin }, { "Next", &Presets::BridgeNext } };
 		void** vtbl = *reinterpret_cast<void***>(vm);
-		for (const Entry& e : entries)
+		// the VM keeps them for the life of the process
+		NativeFunction* fns[] = {
+			new FloatFunction("Begin", kScript, &Presets::BridgeBegin),
+			new FloatFunction("Value", kScript, &Presets::BridgeValue),
+			new StringFunction("NextName", kScript, &Presets::BridgeNextName),
+			new StringFunction("PrevName", kScript, &Presets::BridgePrevName),
+		};
+		const char* names[] = { "Begin", "Value", "NextName", "PrevName" };
+		for (size_t i = 0; i < 4; ++i)
 		{
-			// the VM keeps it for the life of the process
-			auto* fn = new FloatFunction(e.name, kScript, e.fn);
-			reinterpret_cast<void (*)(void*, NativeFunction*)>(vtbl[kVmRegisterFunction])(vm, fn);
-			reinterpret_cast<void (*)(void*, const char*, const char*, UInt32)>(vtbl[kVmSetFunctionFlags])(vm, kScript, e.name, kFunctionFlagNoWait);
+			reinterpret_cast<void (*)(void*, NativeFunction*)>(vtbl[kVmRegisterFunction])(vm, fns[i]);
+			reinterpret_cast<void (*)(void*, const char*, const char*, UInt32)>(vtbl[kVmSetFunctionFlags])(vm, kScript, names[i], kFunctionFlagNoWait);
 		}
-		CP_LOG("Papyrus: BodycamPresets.Begin/Next registered");
+	}
+
+	// A wrong offset shows up here as an access violation, at game start. Caught, the script's
+	// Begin stays unbound, returns nothing, and Apply Preset falls back to the file-only load.
+	inline bool Register(void* vm)
+	{
+		__try
+		{
+			RegisterAll(vm);
+			CP_LOG("Papyrus: BodycamPresets natives registered");
+		}
+		__except (EXCEPTION_EXECUTE_HANDLER)
+		{
+			CP_LOG("Papyrus: registering the natives faulted - presets load without refreshing MCM");
+		}
 		return true;
 	}
 
@@ -160,4 +249,3 @@ namespace PapyrusBridge
 		CP_LOG("Papyrus interface: %s", ok ? "callback queued" : "not available, presets load without refreshing MCM");
 	}
 }
-#endif

@@ -143,9 +143,7 @@ extern "C"
 			CP_LOG("F4SE messaging listener: %s", ok ? "registered" : "FAILED");
 		}
 
-#ifdef BODYCAM_PAPYRUS_BRIDGE
 		PapyrusBridge::Install(f4se);
-#endif
 
 		g_running = true;
 		std::thread(MaintenanceThread).detach();

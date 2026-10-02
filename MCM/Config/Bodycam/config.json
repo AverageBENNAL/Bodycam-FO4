@@ -44,45 +44,50 @@
           "id": "sName:Presets",
           "text": "Preset Name",
           "type": "textinput",
-          "help": "<font size=\"15\">Type a name, then press Save Preset. Saving under a name that already exists replaces it.</font>",
+          "help": "<font size=\"15\">The preset Apply loads and Save writes. Step through the ones you have with Previous and Next, or type a new name to save under.</font>",
           "html": true,
           "valueOptions": {
             "sourceType": "ModSettingString"
           }
         },
         {
-          "text": "Save Preset",
+          "text": "Previous Preset",
           "type": "button",
-          "help": "Saves every setting as it is right now under the name above. The file goes to Data\\F4SE\\Bodycam Presets (your MO2 overwrite folder).",
+          "help": "Puts the preset before this one in the Preset Name box. Nothing is applied until you press Apply Preset.",
           "action": {
             "type": "CallGlobalFunction",
             "script": "BodycamPresets",
-            "function": "Save"
+            "function": "PrevPreset"
           }
         },
         {
-          "id": "iPick:Presets",
-          "text": "Saved Presets",
-          "type": "dropdown",
-          "help": "<font size=\"15\">Pick one, then press Apply Preset. Subtle, Default and Intense are the stock settings at three strengths; below them are the .ini files in Data/F4SE/Bodycam Presets, yours and downloaded ones.</font>",
-          "html": true,
-          "valueOptions": {
-            "sourceType": "ModSettingInt",
-            "options": [
-              "Subtle",
-              "Default",
-              "Intense"
-            ]
+          "text": "Next Preset",
+          "type": "button",
+          "help": "Puts the next preset in the Preset Name box: Subtle, Default and Intense first, then yours and any .ini dropped into Data/F4SE/Bodycam Presets.",
+          "action": {
+            "type": "CallGlobalFunction",
+            "script": "BodycamPresets",
+            "function": "NextPreset"
           }
         },
         {
           "text": "Apply Preset",
           "type": "button",
-          "help": "Sets every slider and switch to the preset picked above. On Next-Gen and Old-Gen the menu keeps showing the old numbers until the game is restarted.",
+          "help": "Sets every slider and switch to the preset named above.",
           "action": {
             "type": "CallGlobalFunction",
             "script": "BodycamPresets",
             "function": "Load"
+          }
+        },
+        {
+          "text": "Save Preset",
+          "type": "button",
+          "help": "Saves every setting as it is right now under the name above, replacing a preset of that name. The file goes to Data/F4SE/Bodycam Presets (your MO2 overwrite folder).",
+          "action": {
+            "type": "CallGlobalFunction",
+            "script": "BodycamPresets",
+            "function": "Save"
           }
         },
         {

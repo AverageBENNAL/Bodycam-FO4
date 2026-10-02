@@ -3392,32 +3392,35 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 				}
 			}
 
-			// Pip-Boy light (vanilla and Pip-Boy Flashlight, nexus 10840) hangs off the Pip-Boy's
-			// 'AttachLight' node on the left arm, so it took the whole rig rotation: in low ready it
-			// lit the floor. Undo r on that node so the beam stays on the view. Same local-write
+			// Pip-Boy light (vanilla and Pip-Boy Flashlight, nexus 10840). Both nodes it can hang from
+			// are inside the rig, so the beam took the whole rig rotation: in low ready it swung off
+			// with the gun. In first person it is 'MiningHelmet1stattachLight' under the rig's Camera
+			// bone; 'p-AttachLight' on the Pip-Boy is the other. Correcting only the Pip-Boy one did
+			// nothing in first person. Undo r on both so the beam stays on the view. Same local-write
 			// bookkeeping as the gun above.
 			{
-				static NiAVObjectView* s_light = nullptr;
-				static NiMatrix43 s_written{}, s_applied{};
-				NiAVObjectView* light = FindNodeContaining(node, "AttachLight", 0);
-				auto* lightParent = light ? *reinterpret_cast<NiAVObjectView**>(reinterpret_cast<uintptr_t>(light) + 0x28) : nullptr;
-				if (light && lightParent)
+				struct LightNode { const char* name; NiAVObjectView* node; NiMatrix43 written, applied; bool logged; };
+				static LightNode s_lights[] = { { "1stattachLight" }, { "p-AttachLight" } };
+				for (LightNode& s : s_lights)
 				{
-					static bool s_logged = false;
-					if (!s_logged && c.debugLog)
+					NiAVObjectView* light = FindNodeContaining(node, s.name, 0);
+					auto* lightParent = light ? *reinterpret_cast<NiAVObjectView**>(reinterpret_cast<uintptr_t>(light) + 0x28) : nullptr;
+					if (!light || !lightParent)
+						continue;
+					if (!s.logged && c.debugLog)
 					{
-						s_logged = true;
+						s.logged = true;
 						CP_LOG("pipboy light: '%s' under '%s'", NodeName(light), NodeName(lightParent));
 					}
 					NiMatrix43 local = ToColumnForm(light->localTransform.rot);
-					bool ours = light == s_light && std::memcmp(&light->localTransform.rot, &s_written, sizeof(s_written)) == 0;
-					NiMatrix43 base = ours ? Mul(Transposed(s_applied), local) : local;
+					bool ours = light == s.node && std::memcmp(&light->localTransform.rot, &s.written, sizeof(s.written)) == 0;
+					NiMatrix43 base = ours ? Mul(Transposed(s.applied), local) : local;
 					NiMatrix43 p = ToColumnForm(lightParent->worldTransform.rot);
 					NiMatrix43 undo = Mul(Transposed(p), Mul(Transposed(r), p)); // r^-1 in the parent's frame
 					light->localTransform.rot = ToGameForm(Mul(undo, base));
-					s_light = light;
-					s_written = light->localTransform.rot;
-					s_applied = undo;
+					s.node = light;
+					s.written = light->localTransform.rot;
+					s.applied = undo;
 				}
 			}
 
