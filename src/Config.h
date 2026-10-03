@@ -70,7 +70,7 @@ struct Config
 		{ 10.0f, -6.0f, 0.0f, 0.0f,  -5.0f, -20.0f, 0.0f, 0.0f,  0.0f, 0.0f,  0.0f, 0.6f, 10.0f }, // Melee / unarmed
 	};
 	float sightsUpDown      = 0.0f;  // calibration: raises (+) / lowers (-) the gun while aiming
-	bool  lowReady          = true;  // muzzle dips when not shooting (hip); pose is per type in hold[]
+	bool  lowReady          = false; // muzzle dips when not shooting (hip); pose is per type in hold[]
 	// On a pad you stand and walk far more than you shoot, so the low ready is what you see most,
 	// and at full swing it read as the aim drifting left (two reports, 1.0.7).
 	bool  controllerMode    = false;
@@ -246,23 +246,30 @@ struct Config
 
 	// ---- Gun lean + motion --------------------------------------------------------------------
 	float gunFollowRoll  = 0.5f;  // gun lean = this x camera lean + extra cant. 1.5 moved the gun with the view so much the lean hardly showed drawn
-	float cantTurn       = 3.1f;  // extra gun cant per rad/s of turning
-	float cantStrafe     = 4.5f;
-	float cantMaxDeg     = 7.0f;
-	float cantRate       = 7.0f;  // spring frequency (rad/s) now, not an exponential rate
-	float cantDamping    = 1.0f;  // 1 = rolls through without overshooting; below 1 it rocks past
-	float gunRollMaxDeg  = 16.0f;
+	float cantTurn       = 14.0f; // extra gun cant per rad/s of turning
+	float cantStrafe     = 12.0f;
+	float cantMaxDeg     = 30.0f;
+	float cantRate       = 10.0f; // spring frequency (rad/s) now, not an exponential rate
+	float cantDamping    = 0.7f;  // 1 = rolls through without overshooting; below 1 it rocks past
+	float gunRollMaxDeg  = 40.0f;
 	float gunRestCantDeg = -2.0f;  // constant resting tilt, hip fire
 	float gunRestCantAdsDeg = -1.0f; // same, aiming down sights
 	float gunRestPitchDeg = -6.0f;   // resting muzzle up (+) / down (-), hip fire only
 	// Weapon inertia from mouse look. Since 1.0.9 the gun bends at the wrist against the turn and
 	// springs back; the aim never sees it. Separate from `inertia` below, which is a strafe-driven
 	// positional drag and does nothing when you only turn the view.
-	float lookInertia        = 26.0f; // degrees of bend per rad/s of mouse look
+	float lookInertia        = 10.0f; // degrees of bend per rad/s of mouse look
 	float lookInertiaMax     = 18.0f; // largest bend, degrees. Past ~10 a rifle starts to leave the support hand
-	float lookInertiaRate    = 2.2f;  // spring frequency: how fast it catches up and settles
-	float lookInertiaDamping = 0.5f;  // below 1 it settles past centre
+	float lookInertiaRate    = 10.0f; // spring frequency: how fast it catches up and settles
+	float lookInertiaDamping = 0.6f;  // below 1 it settles past centre
 	float lookInertiaPush    = 0.6f;  // game units the gun draws in toward the body per degree of bend
+	float lookInertiaSway    = 0.0f;  // game units the hands sway per degree of inertia
+	float lookInertiaLead    = 1.0f;  // share of the inertia the muzzle swings ahead of the turn by; negative trails
+	bool  hipConverge        = true;  // hip fire, Free Aim off: barrel turned in to meet the crosshair
+	float hipConvergeMaxDeg  = 40.0f; // most it turns in
+	float hipConvergeTiltDeg = 18.0f; // barrel tipped up off the crosshair's line, so the back of the gun hangs below it
+	float hipConvergeDropDeg = 2.0f;  // how far under the crosshair the muzzle tip sits, degrees of view
+	float hipConvergeDropPistolDeg = 10.0f; // the same for pistols
 	float inertia        = 0.075f;
 	float inertiaMax     = 8.0f;
 	float inertiaRate    = 15.0f;
@@ -603,6 +610,13 @@ struct Config
 		f("GunMotion", "fLookInertiaRate", lookInertiaRate);
 		f("GunMotion", "fLookInertiaDamping", lookInertiaDamping);
 		f("GunMotion", "fLookInertiaPush", lookInertiaPush);
+		f("GunMotion", "fLookInertiaSway", lookInertiaSway);
+		f("GunMotion", "fLookInertiaLead", lookInertiaLead);
+		b("GunMotion", "bHipConverge", hipConverge);
+		f("GunMotion", "fHipConvergeMaxDeg", hipConvergeMaxDeg);
+		f("GunMotion", "fHipConvergeTilt", hipConvergeTiltDeg);
+		f("GunMotion", "fHipConvergeDrop", hipConvergeDropDeg);
+		f("GunMotion", "fHipConvergeDropPistol", hipConvergeDropPistolDeg);
 		f("GunMotion", "fInertia", inertia);
 		f("GunMotion", "fInertiaMax", inertiaMax);
 		f("GunMotion", "fInertiaRate", inertiaRate);

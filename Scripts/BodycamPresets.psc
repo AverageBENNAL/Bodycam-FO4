@@ -41,7 +41,7 @@ Function Load() global
 		; an earlier press is still being applied
 		Return
 	EndIf
-	If count != 263
+	If count != 270
 		; natives missing or no such preset: let the plugin write the file
 		Bump("iLoadTick:Presets")
 		Return
@@ -62,9 +62,6 @@ Function Load() global
 	MCM.SetModSettingBool("Bodycam", "bStepImpact:Toggles", Value() > 0.5)
 	MCM.SetModSettingBool("Bodycam", "bRetract:Toggles", Value() > 0.5)
 	MCM.SetModSettingBool("Bodycam", "bFreeAim:Look", Value() > 0.5)
-	MCM.SetModSettingInt("Bodycam", "iHipAim:Look", Value() as int)
-	MCM.SetModSettingInt("Bodycam", "iHitIndicator:Look", Value() as int)
-	MCM.SetModSettingFloat("Bodycam", "fCrosshairScale:Look", Value())
 	MCM.SetModSettingFloat("Bodycam", "fFreeAimYawDeg:Look", Value())
 	MCM.SetModSettingFloat("Bodycam", "fFreeAimPitchDeg:Look", Value())
 	MCM.SetModSettingFloat("Bodycam", "fFreeAimSpeed:Look", Value())
@@ -73,6 +70,9 @@ Function Load() global
 	MCM.SetModSettingBool("Bodycam", "bFreeAimDrawnOnly:Look", Value() > 0.5)
 	MCM.SetModSettingInt("Bodycam", "iPinpoint:Look", Value() as int)
 	MCM.SetModSettingFloat("Bodycam", "fRapidFireScatter:Look", Value())
+	MCM.SetModSettingInt("Bodycam", "iHipAim:Look", Value() as int)
+	MCM.SetModSettingInt("Bodycam", "iHitIndicator:Look", Value() as int)
+	MCM.SetModSettingFloat("Bodycam", "fCrosshairScale:Look", Value())
 	MCM.SetModSettingFloat("Bodycam", "fLagMaxDeg:Look", Value())
 	MCM.SetModSettingFloat("Bodycam", "fLagFreq:Look", Value())
 	MCM.SetModSettingFloat("Bodycam", "fLagDamping:Look", Value())
@@ -262,7 +262,14 @@ Function Load() global
 	MCM.SetModSettingFloat("Bodycam", "fLookInertiaMax:GunMotion", Value())
 	MCM.SetModSettingFloat("Bodycam", "fLookInertiaRate:GunMotion", Value())
 	MCM.SetModSettingFloat("Bodycam", "fLookInertiaDamping:GunMotion", Value())
+	MCM.SetModSettingFloat("Bodycam", "fLookInertiaSway:GunMotion", Value())
+	MCM.SetModSettingFloat("Bodycam", "fLookInertiaLead:GunMotion", Value())
 	MCM.SetModSettingFloat("Bodycam", "fLookInertiaPush:GunMotion", Value())
+	MCM.SetModSettingBool("Bodycam", "bHipConverge:GunMotion", Value() > 0.5)
+	MCM.SetModSettingFloat("Bodycam", "fHipConvergeDrop:GunMotion", Value())
+	MCM.SetModSettingFloat("Bodycam", "fHipConvergeDropPistol:GunMotion", Value())
+	MCM.SetModSettingFloat("Bodycam", "fHipConvergeTilt:GunMotion", Value())
+	MCM.SetModSettingFloat("Bodycam", "fHipConvergeMaxDeg:GunMotion", Value())
 	MCM.SetModSettingFloat("Bodycam", "fInertia:GunMotion", Value())
 	MCM.SetModSettingFloat("Bodycam", "fInertiaMax:GunMotion", Value())
 	MCM.SetModSettingFloat("Bodycam", "fInertiaRate:GunMotion", Value())

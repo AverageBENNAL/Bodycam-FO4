@@ -125,6 +125,25 @@
           }
         },
         {
+          "type": "spacer",
+          "numLines": 1
+        },
+        {
+          "text": "<font size=\"15\">Settings apply live - no restart needed. Default is the tuned feel.</font>",
+          "type": "text",
+          "html": true
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "Free Aim",
+      "content": [
+        {
+          "text": "<font size=\"15\">Free Aim does not affect scopes.</font>",
+          "type": "text",
+          "html": true
+        },
+        {
           "text": "Free Aim",
           "type": "section"
         },
@@ -147,85 +166,6 @@
           "valueOptions": {
             "sourceType": "ModSettingBool"
           }
-        },
-        {
-          "text": "Crosshair & Shots",
-          "type": "section"
-        },
-        {
-          "id": "iHipAim:Look",
-          "text": "Shots Follow",
-          "type": "dropdown",
-          "help": "<font size=\"15\">The barrel: shots go where the gun points, with Free Aim on or off. The crosshair: vanilla, and only used with Free Aim off. Default is the barrel.</font>",
-          "html": true,
-          "valueOptions": {
-            "sourceType": "ModSettingInt",
-            "options": [
-              "The crosshair (vanilla)",
-              "The barrel"
-            ]
-          }
-        },
-        {
-          "id": "iHitIndicator:Look",
-          "text": "Hit Marker",
-          "type": "dropdown",
-          "help": "<font size=\"15\">The red marker that flashes when you damage something. It sits outside the crosshair, so with the gun off centre it stays at screen centre while your shot lands elsewhere. Default is move it with the gun.</font>",
-          "html": true,
-          "valueOptions": {
-            "sourceType": "ModSettingInt",
-            "options": [
-              "Leave it alone",
-              "Move it with the gun",
-              "Hide it"
-            ]
-          }
-        },
-        {
-          "id": "fCrosshairScale:Look",
-          "text": "Crosshair Offset Scale",
-          "type": "slider",
-          "help": "<font size=\"15\">Calibrates how far the crosshair moves when it follows the gun. If the crosshair sits outside the gun's real aim (e.g. Default 1.</font>",
-          "html": true,
-          "valueOptions": {
-            "min": 0.5,
-            "max": 1.5,
-            "step": 0.01,
-            "sourceType": "ModSettingFloat"
-          }
-        },
-        {
-          "text": "Weapon Hold",
-          "type": "section"
-        },
-        {
-          "id": "bWeaponHold:Main",
-          "text": "Weapon Hold",
-          "type": "switcher",
-          "help": "<font size=\"15\">Holds the weapon out in front of you like Bodycam while aiming down the sights, so you see more of your arms. The aim is corrected automatically, so the sights still mark the shot. Default off.</font>",
-          "html": true,
-          "valueOptions": {
-            "sourceType": "ModSettingBool"
-          }
-        },
-        {
-          "type": "spacer",
-          "numLines": 1
-        },
-        {
-          "text": "<font size=\"15\">Settings apply live - no restart needed. Default is the tuned feel.</font>",
-          "type": "text",
-          "html": true
-        }
-      ]
-    },
-    {
-      "pageDisplayName": "Free Aim",
-      "content": [
-        {
-          "text": "<font size=\"15\">Switch Free Aim on or off on the General page. Free Aim does not affect scopes.</font>",
-          "type": "text",
-          "html": true
         },
         {
           "text": "Free Aim Box",
@@ -339,9 +279,50 @@
           }
         },
         {
-          "text": "<font size=\"15\">Crosshair, Hit Marker and Shots Follow are on the General page.</font>",
-          "type": "text",
-          "html": true
+          "text": "Crosshair & Shots",
+          "type": "section"
+        },
+        {
+          "id": "iHipAim:Look",
+          "text": "Shots Follow",
+          "type": "dropdown",
+          "help": "<font size=\"15\">The barrel: shots go where the gun points, with Free Aim on or off. The crosshair: vanilla, and only used with Free Aim off. Default is the barrel.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingInt",
+            "options": [
+              "The crosshair (vanilla)",
+              "The barrel"
+            ]
+          }
+        },
+        {
+          "id": "iHitIndicator:Look",
+          "text": "Hit Marker",
+          "type": "dropdown",
+          "help": "<font size=\"15\">The red marker that flashes when you damage something. It sits outside the crosshair, so with the gun off centre it stays at screen centre while your shot lands elsewhere. Default is move it with the gun.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingInt",
+            "options": [
+              "Leave it alone",
+              "Move it with the gun",
+              "Hide it"
+            ]
+          }
+        },
+        {
+          "id": "fCrosshairScale:Look",
+          "text": "Crosshair Offset Scale",
+          "type": "slider",
+          "help": "<font size=\"15\">Calibrates how far the crosshair moves when it follows the gun. If the crosshair sits outside the gun's real aim (e.g. Default 1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0.5,
+            "max": 1.5,
+            "step": 0.01,
+            "sourceType": "ModSettingFloat"
+          }
         },
         {
           "text": "<font size=\"15\">Settings apply live - no restart needed.</font>",
@@ -354,7 +335,21 @@
       "pageDisplayName": "Weapon Hold",
       "content": [
         {
-          "text": "<font size=\"15\">Switch Weapon Hold on or off on the General page. It works while aiming down iron sights, for every weapon type; scopes are never affected. Gun type is detected from the weapon and its mods.</font>",
+          "text": "Weapon Hold",
+          "type": "section"
+        },
+        {
+          "id": "bWeaponHold:Main",
+          "text": "Weapon Hold",
+          "type": "switcher",
+          "help": "<font size=\"15\">Holds the weapon out in front of you like Bodycam while aiming down the sights, so you see more of your arms. The aim is corrected automatically, so the sights still mark the shot. Default off.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "text": "<font size=\"15\">Works while aiming down iron sights, for every weapon type; scopes are never affected. Gun type is detected from the weapon and its mods.</font>",
           "type": "text",
           "html": true
         },
@@ -414,7 +409,7 @@
           "id": "bLowReady:Hold",
           "text": "Low Ready",
           "type": "switcher",
-          "help": "<font size=\"15\">Hip fire: the gun rests down and to the left while you are not shooting, and snaps up when you shoot or aim. Works with or without Weapon Hold. Default on.</font>",
+          "help": "<font size=\"15\">Hip fire: the gun rests down and to the left while you are not shooting, and snaps up when you shoot or aim. Works with or without Weapon Hold. Default off.</font>",
           "html": true,
           "valueOptions": {
             "sourceType": "ModSettingBool"
@@ -1665,11 +1660,11 @@
           "id": "fCantTurnDegPerRadS:GunMotion",
           "text": "Gun Lean Into Turns",
           "type": "slider",
-          "help": "<font size=\"15\">Extra gun cant per unit of turning speed, on top of the camera lean. Negative leans the other way. Default 3.1.</font>",
+          "help": "<font size=\"15\">Extra gun cant per unit of turning speed, on top of the camera lean. Negative leans the other way. Default 14.</font>",
           "html": true,
           "valueOptions": {
-            "min": -12,
-            "max": 12,
+            "min": -30,
+            "max": 30,
             "step": 0.1,
             "sourceType": "ModSettingFloat"
           }
@@ -1678,11 +1673,11 @@
           "id": "fCantMaxDeg:GunMotion",
           "text": "Max Extra Gun Lean",
           "type": "slider",
-          "help": "<font size=\"15\">Largest extra gun cant in degrees. Default 7.</font>",
+          "help": "<font size=\"15\">Largest extra gun cant in degrees. Default 30.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
-            "max": 25,
+            "max": 45,
             "step": 0.5,
             "sourceType": "ModSettingFloat"
           }
@@ -1704,11 +1699,11 @@
           "id": "fRollMaxDeg:GunMotion",
           "text": "Max Total Gun Lean",
           "type": "slider",
-          "help": "<font size=\"15\">Clamp on total gun lean (not counting resting tilt). Default 16.</font>",
+          "help": "<font size=\"15\">Clamp on total gun lean (not counting resting tilt). Default 40.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
-            "max": 40,
+            "max": 60,
             "step": 0.5,
             "sourceType": "ModSettingFloat"
           }
@@ -1760,11 +1755,11 @@
           "id": "fCantStrafeDeg:GunMotion",
           "text": "Gun Lean From Strafing",
           "type": "slider",
-          "help": "<font size=\"15\">Extra gun cant when strafing, scaled by the Subtle / Default / Intense strength. Negative leans the other way. Default 4.5.</font>",
+          "help": "<font size=\"15\">Extra gun cant when strafing, scaled by the Subtle / Default / Intense strength. Negative leans the other way. Default 12.</font>",
           "html": true,
           "valueOptions": {
-            "min": -15,
-            "max": 15,
+            "min": -25,
+            "max": 25,
             "step": 0.5,
             "sourceType": "ModSettingFloat"
           }
@@ -1773,7 +1768,7 @@
           "id": "fCantRate:GunMotion",
           "text": "Gun Lean Speed",
           "type": "slider",
-          "help": "<font size=\"15\">How fast the gun rolls into a lean. Lower is smoother and heavier through a left-to-right change of direction. Default 7.</font>",
+          "help": "<font size=\"15\">How fast the gun rolls into a lean. Lower is smoother and heavier through a left-to-right change of direction. Default 10.</font>",
           "html": true,
           "valueOptions": {
             "min": 1,
@@ -1786,7 +1781,7 @@
           "id": "fCantDamping:GunMotion",
           "text": "Gun Lean Smoothness",
           "type": "slider",
-          "help": "<font size=\"15\">1 = the gun rolls onto its new lean without overshooting. Below 1 it rocks slightly past and comes back, which feels looser. Default 1.</font>",
+          "help": "<font size=\"15\">1 = the gun rolls onto its new lean without overshooting. Below 1 it rocks slightly past and comes back, which feels looser. Default 0.7.</font>",
           "html": true,
           "valueOptions": {
             "min": 0.3,
@@ -2085,7 +2080,7 @@
           "id": "fLookInertia:GunMotion",
           "text": "Inertia",
           "type": "slider",
-          "help": "<font size=\"15\">How far the gun bends at the wrist against the way you turn. Only the gun moves, never the arms, and it never moves where shots land or the crosshair. Default 26.</font>",
+          "help": "<font size=\"15\">How strongly the gun reacts when you turn: the gun swings ahead of the turn and whips back. It never moves where shots land or the crosshair. Default 10.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
@@ -2098,7 +2093,7 @@
           "id": "fLookInertiaMax:GunMotion",
           "text": "Max Inertia",
           "type": "slider",
-          "help": "<font size=\"15\">Largest the wrist bend can get, in degrees, however fast you spin. Past about 10 a rifle starts to leave the support hand. Default 18.</font>",
+          "help": "<font size=\"15\">Cap on the inertia, however fast you spin. Default 18.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
@@ -2111,7 +2106,7 @@
           "id": "fLookInertiaRate:GunMotion",
           "text": "Inertia Recovery Speed",
           "type": "slider",
-          "help": "<font size=\"15\">How quickly the gun swings back once you stop turning. Lower is looser and lazier. Default 2.2.</font>",
+          "help": "<font size=\"15\">How quickly the gun swings back once you stop turning. Lower is looser and lazier. Default 10.</font>",
           "html": true,
           "valueOptions": {
             "min": 0.5,
@@ -2124,7 +2119,7 @@
           "id": "fLookInertiaDamping:GunMotion",
           "text": "Inertia Smoothness",
           "type": "slider",
-          "help": "<font size=\"15\">Below 1 the gun wobbles past centre before coming to rest; lower is bendier. 1 = no overshoot. Default 0.5.</font>",
+          "help": "<font size=\"15\">Below 1 the gun wobbles past centre before coming to rest; lower is bendier. 1 = no overshoot. Default 0.6.</font>",
           "html": true,
           "valueOptions": {
             "min": 0.2,
@@ -2134,15 +2129,103 @@
           }
         },
         {
+          "id": "fLookInertiaSway:GunMotion",
+          "text": "Inertia Sway",
+          "type": "slider",
+          "help": "<font size=\"15\">Slides the hands against the turn, per degree of inertia. It works against Barrel Lead, so it is off by default. Default 0.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 1.5,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLookInertiaLead:GunMotion",
+          "text": "Barrel Lead",
+          "type": "slider",
+          "help": "<font size=\"15\">Above 0 the barrel points ahead of the turn and the back of the gun trails it; below 0 the other way. The tip of the barrel stays put. Default 1.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": -3,
+            "max": 3,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
           "id": "fLookInertiaPush:GunMotion",
           "text": "Inertia Push",
           "type": "slider",
-          "help": "<font size=\"15\">How far the gun draws in toward you while it is bent, then rocks forward and back as it settles. Moves the gun, never the aim. Default 0.6.</font>",
+          "help": "<font size=\"15\">How far the gun draws in toward you while it is swinging, then eases back out. It never goes further out than its resting place. Default 0.6.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
             "max": 2,
             "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "bHipConverge:GunMotion",
+          "text": "Barrel Points At Crosshair",
+          "type": "switcher",
+          "help": "<font size=\"15\">Hip fire: the gun is held bottom centre with the tip of the barrel just under the crosshair, and follows the crosshair around the screen. Works with Free Aim on or off; where shots land does not change. Default on.</font>",
+          "html": true,
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "fHipConvergeDrop:GunMotion",
+          "text": "Tip Below Crosshair",
+          "type": "slider",
+          "help": "<font size=\"15\">How far under the crosshair the tip of the barrel sits, in degrees of view, for everything but pistols. 0 = the tip covers the crosshair. Default 2.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 20,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHipConvergeDropPistol:GunMotion",
+          "text": "Pistol Tip Below Crosshair",
+          "type": "slider",
+          "help": "<font size=\"15\">The same for pistols, which are short and sit high on screen at the long-gun setting. Default 10.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 25,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHipConvergeTilt:GunMotion",
+          "text": "Barrel Tilt",
+          "type": "slider",
+          "help": "<font size=\"15\">Tips the barrel up so the back of the gun hangs lower. 0 = the barrel runs straight along the crosshair's line. Default 18.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 35,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fHipConvergeMaxDeg:GunMotion",
+          "text": "Max Turn In",
+          "type": "slider",
+          "help": "<font size=\"15\">Most the gun turns to get there, in degrees. Default 40.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 60,
+            "step": 0.5,
             "sourceType": "ModSettingFloat"
           }
         },

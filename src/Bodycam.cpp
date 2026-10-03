@@ -133,7 +133,10 @@ namespace Bodycam
 	// Distinct from the strafe-driven "Gun Drag" below, which only responds to sideways movement.
 	static float g_swingYaw = 0.0f, g_swingYawVel = 0.0f;
 	static float g_swingPitch = 0.0f, g_swingPitchVel = 0.0f;
+	static float g_leadYaw = 0.0f, g_leadYawVel = 0.0f; // muzzle lead into the turn, degrees
+	static float g_leadPitch = 0.0f, g_leadPitchVel = 0.0f;
 	static float g_push = 0.0f, g_pushVel = 0.0f; // inertia pull toward the body, game units (negative = back)
+	static float g_aimDist = 8000.0f; // eye to whatever is under the crosshair, for hip fire convergence
 	static float g_cantVel = 0.0f;  // gun cant is second-order so left<->right reversals are smooth
 	static float g_floatYaw = 0.0f, g_floatYawVel = 0.0f;
 	static float g_floatPitch = 0.0f, g_floatPitchVel = 0.0f;
@@ -206,6 +209,28 @@ namespace Bodycam
 	// Weapon inertia bends the gun at the wrist; BarrelDir takes it back out so it never moves the aim.
 	static float g_bendYaw = 0.0f, g_bendPitch = 0.0f; // radians, as applied to the Weapon node
 	static NiPoint3 g_bendUp{ 0.0f, 0.0f, 1.0f }, g_bendRight{ 1.0f, 0.0f, 0.0f };
+	// Hip fire turn-in (Barrel Points At Crosshair), world rotation vector of the whole rig, radians,
+	// as last applied, outside the arms' lead.
+	// BarrelDir always takes it back out: under Free Aim and Hip Fire Aim = barrel the crosshair and
+	// shots are drawn from the barrel, and leaving it in had the crosshair chase the barrel and jump.
+	static NiPoint3 g_convWorld{};
+	// The arms' share of the inertia lead, a world rotation of the whole rig, outside the FOV compensation.
+	static NiMatrix43 g_armLead = Identity();
+	// The rig's engine rotation and pivot as Hook_Rig last saw them (see frameTurn).
+	static NiMatrix43 s_prevRigRot = Identity();
+	static NiPoint3 s_prevPivot{};
+	static bool s_havePrev = false;
+	static NiPoint3 g_leadShiftPrev{}; // last frame's leadShift, which rides in the hold shift
+	static NiPoint3 g_transientShift{}; // last frame's rig shift less the hold pose: bob, inertia, recoil
+
+	// The crosshair marks the barrel's line rather than the aim: Hip Fire Aim = barrel only. Under
+	// Free Aim it marks g_trueRot, and treating that as the barrel put the muzzle tip the hold's
+	// own pitch (about 10 deg) under the crosshair.
+	static bool CrosshairOnBarrel()
+	{
+		const Config& c = g_config;
+		return !c.freeAim && c.hipAim == 1;
+	}
 	static float g_sightDist = 0.0f; // eye to sight node along the view while aimed, 0 = not measured
 	static float g_fovBase = 0.0f, g_fovApplied = 0.0f, g_fovWritten = 0.0f;
 	static bool  g_fovOwned = false;
@@ -478,6 +503,7 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 		g_floatYaw = g_floatYawVel = g_floatPitch = g_floatPitchVel = 0.0f;
 		g_cantVel = 0.0f;
 		g_swingYaw = g_swingYawVel = g_swingPitch = g_swingPitchVel = 0.0f;
+		g_leadYaw = g_leadYawVel = g_leadPitch = g_leadPitchVel = 0.0f;
 		g_push = g_pushVel = 0.0f;
 		g_tiltSign = 1.0f; g_tiltNext = 0.0f;
 		g_yawRate = g_turnRate = g_roll = g_rollScreen = g_cant = g_strafeNorm = 0.0f;
@@ -733,7 +759,7 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 	// Falls back to `aim` when there is no muzzle node or it is nowhere near the aim, which is the
 	// same rule the launch hook has always used. One definition, so the crosshair marks the line
 	// the bullet leaves on rather than a second guess at it.
-	static NiPoint3 BarrelDir(const NiPoint3& aim)
+	static NiPoint3 BarrelDir(const NiPoint3& aim, bool raw = false)
 	{
 		NiAVObjectView* rig = g_rigNode.load();
 		NiAVObjectView* muzzle = rig ? FindNode(rig, "ProjectileNode", 0) : nullptr;
@@ -748,13 +774,24 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 			float dp = Dot(Normalized(cand[i]), aim);
 			if (dp > best) { best = dp; axis = i; }
 		}
-		if (best <= 0.9f) // no axis within ~25 deg of the aim: not a barrel we can trust
-			return aim;
-		// Undo the wrist bend (yaw then pitch, so pitch comes off first), then the FOV compensation.
+		// Undo outermost first: the wrist's yaw then pitch, the turn-in, the arms' lead, the FOV
+		// compensation. `raw` keeps the turn-in, for the loop that measures it.
 		NiPoint3 v = Normalized(cand[axis]);
-		v = AxisAngle(g_bendRight, -g_bendPitch).Mul(v);
 		v = AxisAngle(g_bendUp, -g_bendYaw).Mul(v);
-		return Normalized(Transposed(g_fovCompRot).Mul(v));
+		v = AxisAngle(g_bendRight, -g_bendPitch).Mul(v);
+		NiPoint3 kept = v;
+		float conv = Length(g_convWorld);
+		if (conv > 1e-5f)
+			v = AxisAngle(g_convWorld * (1.0f / conv), -conv).Mul(v);
+		v = Normalized(Transposed(g_fovCompRot).Mul(Transposed(g_armLead).Mul(v)));
+		// No axis within ~25 deg of the aim: not a barrel we can trust. Tested with the lead and
+		// turn-in already out. On the drawn barrel they put it past 25 deg on a hard turn, the
+		// answer flipped to `aim` for those frames and the gun, crosshair and shots all jumped.
+		if (Dot(v, aim) <= 0.9f)
+			return aim;
+		if (raw)
+			return Normalized(Transposed(g_fovCompRot).Mul(Transposed(g_armLead).Mul(kept)));
+		return v;
 	}
 
 	// NiCamera::viewFrustum right edge of the world camera (tan of half the horizontal FOV), -1 if unreadable.
@@ -1707,6 +1744,15 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 			float groundDist = 0.0f;
 			bool groundHit = RayCast::Cast(g_base, world, g_trueEye, g_trueEye - kWorldUp * c.groundedProbe, groundDist);
 			bool airborne = !groundHit || std::fabs(g_fallSpeed) > c.airborneFallSpeed;
+			// What the crosshair is on, for Hook_Rig to point the hip-fire barrel at. Cast here because
+			// this hook already casts every frame; the rig hook runs inside the scene update.
+			{
+				NiPoint3 aimF = Normalized(g_trueRot.Forward());
+				if (CrosshairOnBarrel())
+					aimF = BarrelDir(aimF);
+				float d = 8000.0f;
+				g_aimDist = RayCast::Cast(g_base, world, g_trueEye, g_trueEye + aimF * 8000.0f, d) ? d : 8000.0f;
+			}
 			g_grounded = Approach(g_grounded, airborne ? 0.0f : 1.0f, c.groundedRate, dt);
 
 			// Leaving and hitting the ground. Both edges come off the RAW airborne test, not the
@@ -1904,12 +1950,35 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 				SpringTo(g_swingPitch, g_swingPitchVel, tPitch, c.lookInertiaRate, c.lookInertiaDamping, dt);
 				g_swingYaw   = std::clamp(g_swingYaw,   -lim, lim);
 				g_swingPitch = std::clamp(g_swingPitch, -lim, lim);
+				// The muzzle's lead goes the other way, into the turn. On the swing's own spring it
+				// only showed up after the flick was over and read as overshoot, so it builds on a
+				// stiff one and lets go on the loose one.
+				// The mouse rate is one frame's delta over one frame's time and jumps about, more so at
+				// 30 fps. Straight into the stiff spring it shook the gun on every sideways turn, and
+				// the build / let-go choice flipped with it frame to frame. So it is smoothed first,
+				// and the stiff spring has a fixed rate: tied to Recovery Speed it reached 25.
+				static float s_leadYawT = 0.0f, s_leadPitchT = 0.0f;
+				const float smooth = 1.0f - std::exp(-14.0f * dt);
+				s_leadYawT += (-tYaw - s_leadYawT) * smooth;
+				s_leadPitchT += (-tPitch - s_leadPitchT) * smooth;
+				auto lead = [&](float& x, float& v, float t) {
+					bool building = t * x >= 0.0f && std::fabs(t) > std::fabs(x) + 0.5f;
+					if (building)
+						SpringTo(x, v, t, std::max(c.lookInertiaRate, 6.0f), 1.0f, dt);
+					else
+						SpringTo(x, v, t, c.lookInertiaRate, c.lookInertiaDamping, dt);
+					x = std::clamp(x, -lim, lim);
+				};
+				lead(g_leadYaw, g_leadYawVel, s_leadYawT);
+				lead(g_leadPitch, g_leadPitchVel, s_leadPitchT);
 			}
 			else
 			{
 				float decay = std::exp(-10.0f * dt);
 				g_swingYaw *= decay; g_swingPitch *= decay;
 				g_swingYawVel = g_swingPitchVel = 0.0f;
+				g_leadYaw *= decay; g_leadPitch *= decay;
+				g_leadYawVel = g_leadPitchVel = 0.0f;
 			}
 			// Push: while the gun is bent the arms give a little and draw it in toward the body, then
 			// it rocks forward past rest and back before it settles. Driven by the bend itself, so it
@@ -1918,6 +1987,13 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 			{
 				float bend = std::sqrt(g_swingYaw * g_swingYaw + g_swingPitch * g_swingPitch);
 				SpringTo(g_push, g_pushVel, -bend * c.lookInertiaPush, c.lookInertiaRate * 1.4f, 0.45f, dt);
+				// Never forward of rest. The rock past rest carried the arms out far enough to show
+				// the cut end of the left arm at the bottom of the screen.
+				if (g_push > 0.0f)
+				{
+					g_push = 0.0f;
+					g_pushVel = std::min(g_pushVel, 0.0f);
+				}
 			}
 
 			// Body roll into turns and strafes.
@@ -3151,16 +3227,68 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 			g_inertia.z = Approach(g_inertia.z, dragTarget.z, c.inertiaRate, dt);
 
 			float wg = g_blend;
-			// Weapon inertia bends the gun at the wrist and nothing else: it turns the Weapon node about
-			// its own origin in the right hand (below, with the low ready's gun-only turn), not the arms,
-			// and BarrelDir takes the bend back out, so shots and the crosshair never see it. Swinging
-			// the whole rig instead fought Free Aim's lead and moved the point of impact, so it was off
-			// under Free Aim before 1.0.9.
+			// Weapon inertia, the Bodycam way: the barrel swings to point ahead of the turn (Barrel
+			// Lead; negative trails instead) about its own tip (leadShift below), so the butt and the
+			// hands are what move. The arms carry most of the lead as a turn of the whole rig (g_armLead), which
+			// keeps a rifle in the support hand; the rest turns the Weapon node about its origin in
+			// the right hand, with the low ready's gun-only turn. BarrelDir takes both back out, so
+			// shots and the crosshair never see it. Swinging the whole rig instead fought Free Aim's lead and moved the point
+			// of impact, so it was off under Free Aim before 1.0.9.
 			// Scaled by the intensity preset like every other amplitude.
 			// Fades out in ADS: at full strength it swung the sights off target on every turn.
 			const float swingAds = 1.0f - g_holdAds;
-			const float bendYaw   = g_swingYaw   * g_amplitude * swingAds * kDegToRad * c.yawSign * g_blend;
-			const float bendPitch = g_swingPitch * g_amplitude * swingAds * kDegToRad * c.pitchSign * g_blend;
+			const float kArmShare = 1.0f; // any share at the wrist turns the gun about the hand and moves the tip
+			const float kWristMax = 2.0f * kDegToRad;
+			const float leadYaw   = g_leadYaw   * c.lookInertiaLead * g_amplitude * swingAds * kDegToRad * c.yawSign * g_blend;
+			const float leadPitch = g_leadPitch * c.lookInertiaLead * g_amplitude * swingAds * kDegToRad * c.pitchSign * g_blend;
+			const float bendYaw   = std::clamp(leadYaw * (1.0f - kArmShare), -kWristMax, kWristMax);
+			const float bendPitch = std::clamp(leadPitch * (1.0f - kArmShare), -kWristMax, kWristMax);
+			// Read the barrel before this frame's lead replaces last frame's: the muzzle node still
+			// carries last frame's, and the mismatch had the turn-in below working against the lead.
+			//
+			// Everything read here is a frame old - the muzzle node, and g_trueRot, which the camera
+			// hook sets after this one - while the rig this hook is about to write is already turned
+			// to this frame's aim. For offsets that does not matter. Placing the tip on the aim's
+			// line does: at a 300 deg/s turn the line was 5 to 10 deg behind the rig, so the tip sat
+			// that far off the crosshair for as long as the turn lasted and the gun looked hinged at
+			// the butt (video, 1.0.9 test: tip 9 deg off with the log reading 0.2). frameTurn is how
+			// far the rig has turned since, and carries the old readings into this frame.
+			NiMatrix43 frameTurn = s_havePrev ? Mul(rigRot, Transposed(s_prevRigRot)) : Identity();
+			{
+				NiPoint3 f0{ 0.0f, 1.0f, 0.0f };
+				if (Dot(frameTurn.Mul(f0), f0) < 0.8f) // a load or a teleport, not a turn
+					frameTurn = Identity();
+			}
+			const NiPoint3 prevPivot = s_havePrev ? s_prevPivot : pivot;
+			s_prevRigRot = rigRot;
+			s_prevPivot = pivot;
+			s_havePrev = true;
+			const NiPoint3 staleAim = Normalized(g_trueRot.Forward());
+			const NiPoint3 convAim = Normalized(frameTurn.Mul(staleAim));
+			const NiPoint3 barrelRest = Normalized(frameTurn.Mul(BarrelDir(staleAim)));
+			const NiPoint3 convSight = CrosshairOnBarrel() ? barrelRest : convAim;
+			const NiPoint3 rawBarrel = BarrelDir(staleAim, true);
+			// BarrelDir hands the aim itself back when it cannot trust the muzzle (a draw, a reload).
+			const bool barrelOk = Length(rawBarrel - staleAim) > 1e-5f;
+			const NiPoint3 convBarrel = Normalized(frameTurn.Mul(rawBarrel));
+			// The muzzle as it would be with last frame's inertia (its slide, push and the arms' lead)
+			// taken out: pos = pivot + Conv * Lead * q + hold shift + the rest of the shift, and
+			// pivot + Conv * q + hold shift is what is wanted. The hold shift is added after the
+			// rotation, so it has to come off before the lead is undone: left in, it was turned with
+			// the lead, the tip came out several units from where it really was, and the tip swung
+			// off the crosshair on every turn (measured 8 deg at a 16 deg lead).
+			NiPoint3 convMuzzleArm{}; // Conv * q, the muzzle from the pivot before any shift
+			NiPoint3 convMuzzleRest = pivot;
+			if (muzzleNode)
+			{
+				NiPoint3 d = muzzleNode->worldTransform.pos - g_transientShift - g_rigHoldShift - prevPivot;
+				float ca = Length(g_convWorld);
+				NiMatrix43 conv = ca > 1e-5f ? AxisAngle(g_convWorld * (1.0f / ca), ca) : Identity();
+				convMuzzleArm = frameTurn.Mul(conv.Mul(Transposed(g_armLead).Mul(Transposed(conv).Mul(d))));
+				convMuzzleRest = pivot + convMuzzleArm + frameTurn.Mul(g_rigHoldShift - g_leadShiftPrev);
+			}
+			g_armLead = Mul(AxisAngle(up, leadYaw * kArmShare), AxisAngle(right, leadPitch * kArmShare));
+			const NiPoint3 swaySlide = (right * g_swingYaw + up * g_swingPitch) * (c.lookInertiaSway * g_amplitude * swingAds * g_blend);
 			g_bendYaw = bendYaw;
 			g_bendPitch = bendPitch;
 			g_bendUp = up;
@@ -3169,7 +3297,7 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 			float yaw   = (-g_gunPeek * c.gunYawDeg * c.yawSign * (1.0f - g_holdAds) + g_recoil.gunYawDeg) * kDegToRad * wg;
 			float yawHold = 0.0f; // low ready swing, added once the pose is known below
 			// Gun lean = the screen lean (so the weapon tilts with the view) + extra cant on top.
-			g_gunRollDeg = std::clamp(g_viewRollDeg * c.gunFollowRoll + g_cant * c.cantSign * g_amplitude * wg,
+			g_gunRollDeg = std::clamp(g_viewRollDeg * c.gunFollowRoll + g_cant * c.cantSign * g_amplitude * wg * (1.0f - 0.6f * g_holdAds), // aimed: what it was before 1.0.9
 				-c.gunRollMaxDeg, c.gunRollMaxDeg)
 				+ (c.gunRestCantDeg + (c.gunRestCantAdsDeg - c.gunRestCantDeg) * g_holdAds) * c.cantSign * wg; // resting cant, hip -> ADS on the aim blend
 			// Corner peek takes the gun's lean over completely. Mixed in, the resting tilt added to one
@@ -3188,7 +3316,13 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 			const float armShare = std::clamp(hold.armShare, 0.0f, 1.0f);
 			yawHold = hold.yawDeg * armShare * kDegToRad * c.yawSign;
 			const float gunOnlyYaw = hold.yawDeg * (1.0f - armShare) * kDegToRad * c.yawSign;
-			NiMatrix43 r = Mul(AxisAngle(up, yaw + yawHold), Mul(AxisAngle(fwd, cant), AxisAngle(right, pitch)));
+			// The gun leans about its own barrel, not the view axis. The hip pose points the barrel
+			// some 10 deg under the view, and about the view axis a 30 deg lean swung it 5 deg
+			// sideways: with Hip Fire Aim = barrel the crosshair and the shots went with it.
+			NiPoint3 cantAxis = Normalized(Transposed(AxisAngle(up, yaw + yawHold)).Mul(barrelRest));
+			if (Dot(cantAxis, fwd) < 0.8f)
+				cantAxis = fwd;
+			NiMatrix43 r = Mul(AxisAngle(up, yaw + yawHold), Mul(AxisAngle(cantAxis, cant), AxisAngle(right, pitch)));
 
 
 			// Weapon-FOV compensation. The gun is drawn with the weapon projection and the world
@@ -3243,7 +3377,95 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 				}
 			}
 			g_fovCompRot = fovComp;
-			r = Mul(fovComp, r);
+			r = Mul(g_armLead, Mul(fovComp, r));
+
+			// Hip fire, like Bodycam: the muzzle tip sits just under the crosshair (Tip Below Crosshair)
+			// and the gun runs up to it from bottom centre, wherever the crosshair goes. Two closed loops on last frame's muzzle:
+			// one turns the whole rig until the barrel runs along the crosshair's line tipped up by
+			// Barrel Tilt, the other slides the rig until the tip is on that line. Tilt is what drops
+			// the back of the gun out of the way; at 0 you look straight down the top of it.
+			// Aiming the barrel at what the crosshair is on gave a turn of a degree or two that nobody
+			// could see (measured 0.1 deg of error with the gun still looking parallel), and at the
+			// wrist a bigger turn took the gun out of the hands, so it is the rig that moves.
+			// The slide reads the muzzle with the inertia taken out (convMuzzleRest), or it would
+			// cancel the swing it is supposed to leave alone. Both are kept in view axes so they turn
+			// with the view, and both are off in ADS and the low ready, which place the gun themselves.
+			// The crosshair is the aim, or with Hip Fire Aim = barrel the barrel's own line with the
+			// turn taken out.
+			NiPoint3 convShift{};
+			{
+				static NiPoint3 s_conv{};  // rotation vector, radians, components along right / fwd / up
+				static NiPoint3 s_slide{}; // game units, same components
+				const float convW = c.hipConverge ? (1.0f - g_holdAds) * (1.0f - g_lowReady) * wg : 0.0f;
+				bool steady = false;
+				if (convW > 0.01f && muzzleNode)
+				{
+					const float tilt = c.hipConvergeTiltDeg * kDegToRad;
+					NiPoint3 target = Normalized(convSight * std::cos(tilt) + up * std::sin(tilt));
+					NiPoint3 ax = Cross(convBarrel, target);
+					float sinA = Length(ax);
+					// where the crosshair's line is drawn for the gun, which has its own projection
+					// A pistol is short: with its tip that close under the crosshair the whole gun sat high.
+					const float drop = (g_holdType == 0 ? c.hipConvergeDropPistolDeg : c.hipConvergeDropDeg) * kDegToRad;
+					NiPoint3 line = Normalized(fovComp.Mul(convSight) * std::cos(drop) - up * std::sin(drop));
+					NiPoint3 rel = convMuzzleRest - pivot;
+					float along = Dot(rel, line);
+					NiPoint3 off = along > 5.0f ? line * along - rel : NiPoint3{};
+					static uint32_t s_convLog = 0;
+					if (c.debugLog && (s_convLog % 120) == 0)
+					{
+						// Where each should be drawn, degrees right / up of the view centre.
+						auto onScreen = [&](const NiPoint3& d, float& yawDeg, float& pitchDeg) {
+							float y = Dot(d, Normalized(g_viewRot.Forward()));
+							yawDeg = std::atan2(Dot(d, Normalized(g_viewRot.Right())), y) / kDegToRad;
+							pitchDeg = std::atan2(Dot(d, Normalized(g_viewRot.Up())), y) / kDegToRad;
+						};
+						float ay, ap, ty, tp, by, bp;
+						onScreen(convAim, ay, ap);
+						onScreen(Normalized(muzzleNode->worldTransform.pos - pivot), ty, tp);
+						onScreen(convBarrel, by, bp);
+						NiPoint3 mp = muzzleNode->worldTransform.pos - pivot;
+						CP_LOG("turn-in screen: crosshair (%.1f,%.1f) tip (%.1f,%.1f) barrel points (%.1f,%.1f) deg | tip from eye (%.1f,%.1f,%.1f) k=%.3f raised=%d crossDuDv=(%.3f,%.3f)",
+							ay, ap, ty, tp, by, bp, Dot(mp, right), Dot(mp, fwd), Dot(mp, up), g_fovK, g_fovRaised ? 1 : 0, g_crossDu, g_crossDv);
+					}
+					if (c.debugLog && (s_convLog++ % 120) == 0)
+						CP_LOG("turn-in: err=%.2f deg conv=(%.2f,%.2f,%.2f) deg | tip off line %.1f along %.1f slide=(%.1f,%.1f,%.1f) | lead=(%.1f,%.1f) freeAim=%d",
+							std::asin(std::min(sinA, 1.0f)) / kDegToRad, s_conv.x / kDegToRad, s_conv.y / kDegToRad, s_conv.z / kDegToRad,
+							Length(off), along, s_slide.x, s_slide.y, s_slide.z, g_leadYaw, g_leadPitch, g_freeAim ? 1 : 0);
+					// Only chase a gun that is being held. In a draw or a reload the barrel swings through
+					// 60 deg and more; followed, the turn wound up to its cap and the slide to 30 units,
+					// and the gun came out of the animation pointing off to one side.
+					steady = barrelOk && Dot(convBarrel, target) > 0.82f && Length(off) < 30.0f;
+					if (!steady)
+						off = NiPoint3{};
+					if (steady && sinA > 1e-5f)
+					{
+						// Slow on purpose: these hold a pose. Quick, they answered every frame's reading
+						// error in a turn (about a degree at 30 fps) and that showed as a shudder.
+						float step = std::asin(std::min(sinA, 1.0f)) * std::min(1.0f, 5.0f * dt) * convW;
+						NiPoint3 a = ax * (step / sinA);
+						s_conv = s_conv + NiPoint3{ Dot(a, right), Dot(a, fwd), Dot(a, up) };
+					}
+					NiPoint3 e = off * (std::min(1.0f, 4.0f * dt) * convW);
+					s_slide = s_slide + NiPoint3{ Dot(e, right), Dot(e, fwd), Dot(e, up) };
+				}
+				const float fade = std::exp(-6.0f * dt * (1.0f - convW)) * (steady || convW <= 0.01f ? 1.0f : std::exp(-3.0f * dt));
+				s_conv = s_conv * fade;
+				s_slide = s_slide * fade;
+				const float convCap = c.hipConvergeMaxDeg * kDegToRad;
+				if (Length(s_conv) > convCap)
+					s_conv = s_conv * (convCap / Length(s_conv));
+				if (Length(s_slide) > 60.0f)
+					s_slide = s_slide * (60.0f / Length(s_slide));
+				g_convWorld = right * s_conv.x + fwd * s_conv.y + up * s_conv.z;
+				float convAngle = Length(g_convWorld);
+				if (convAngle > 1e-5f)
+					r = Mul(AxisAngle(g_convWorld * (1.0f / convAngle), convAngle), r);
+				// Turning the rig up about the eye swings the arms forward from under it, and the cut
+				// end of the left arm with them. Draw the gun back as it turns: 0.25 units a degree
+				// keeps the cut out of view at the 28 deg a Barrel Tilt of 18 needs.
+				convShift = right * s_slide.x + fwd * (s_slide.y - 0.25f * convAngle / kDegToRad) + up * s_slide.z;
+			}
 
 			// Low ready slide and drop, along the aim's own right and world up. The rig's own axes
 			// ("right" above) did not move it sideways at all in game.
@@ -3253,6 +3475,24 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 				// Iron Sights Distance. It sat in the full-rig shift below until 1.0.8, which moves the eye
 				// bone too: measured sight-to-eye 25.3 at push 16 and 24.0 at push 30, i.e. it never showed.
 				+ fwd * hold.forward;
+			lowReadyShift = lowReadyShift + convShift;
+			// The inertia turns the gun about the tip of the barrel, not the eye: the tip stays on
+			// the crosshair and it is the butt and the hands that trail the turn. Turned about the
+			// eye the tip swung off the crosshair by the whole lead and read as the barrel lagging.
+			// The rig still turns about the pivot; this puts the tip back where it was.
+			NiPoint3 leadShift{};
+			if (muzzleNode)
+			{
+				float ca = Length(g_convWorld);
+				NiMatrix43 conv = ca > 1e-5f ? AxisAngle(g_convWorld * (1.0f / ca), ca) : Identity();
+				leadShift = convMuzzleArm - conv.Mul(g_armLead.Mul(Transposed(conv).Mul(convMuzzleArm)));
+			}
+			// With the hold shift, so the eye bone is held back by it like the rest. Left in the
+			// loose part of the shift it depended on the camera-follows-shift detector, which these
+			// big turn-linked shifts fooled: one run it decided yes and the tip swung with the lead,
+			// the next it decided no and the tip held.
+			lowReadyShift = lowReadyShift + leadShift;
+			g_leadShiftPrev = leadShift;
 			static uint32_t s_lrLog = 0;
 			if (c.debugLog && g_lowReady > 0.05f && (s_lrLog++ % 120) == 0)
 				CP_LOG("low ready: amount=%.2f shift=(%.1f,%.1f,%.1f) side=%.1f height=%.1f yaw=%.1f rigSpace=%s",
@@ -3260,7 +3500,7 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 					hold.yawDeg, localSpace ? "camera-relative" : "world");
 			// Breathing stays out of the gun: standing still it rocked the sights enough to miss with a pistol.
 			NiPoint3 shift = lowReadyShift + ((g_bobOffset - g_breathOffset) * c.gunBobScale
-				+ g_inertia
+				+ g_inertia + swaySlide
 				+ fwd * (g_push * g_amplitude * swingAds)
 				+ right * (g_gunPeek * c.gunPeekDist * (1.0f - g_holdAds))
 				- fwdFlat * (g_retract * c.retractBack + g_recoil.gunBack)
@@ -3289,6 +3529,7 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 			g_rigAppliedShift = shift - lowReadyShift; // the eye bone is held back, so the camera does not follow this part
 			g_rigHoldShift = lowReadyShift - up * hold.drop + right * hold.side
 				+ up * (c.sightsUpDown * g_holdAds * wg);
+			g_transientShift = shift - g_rigHoldShift;
 			// Safety net. Everything above feeds next frame's input, so one bad frame can
 			// compound instead of washing out. If what we are about to leave on the node is not
 			// finite, or has thrown the rig an implausible distance from the eye, put the
