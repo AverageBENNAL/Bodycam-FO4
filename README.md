@@ -39,15 +39,17 @@ If you used the earlier **CornerPeek** test build, disable or remove it. Bodycam
 
 Open **Mod Config -> Bodycam**:
 
-- **General**: enable/disable (fades smoothly), intensity preset (Subtle x0.6 / Default x1.0 / Intense x1.5; scales all motion, sliders still apply on top), Motion Sickness Mode, Controller Mode, Toggle Aim, Free Aim, Shots Follow.
-- **Free Aim**: box size, recenter speed, gun speed, hit marker, sight-accurate shots.
-- **Weapon Hold**: per weapon type hip pose, hip raise on fire, iron sights distance, sights and hip FOV, auto sights FOV distance, and Low Ready pose.
+- **General**: enable/disable (fades smoothly), My Presets (save every setting under a name, load it back, share the `.ini`; Subtle, Default and Intense ship as presets), Motion Sickness Mode, Controller Mode, Toggle Aim.
+- **Free Aim**: the Free Aim switch, crosshair follows gun, box size, recenter speed, gun speed, sight-accurate shots, Shots Follow, hit marker.
+- **Weapon Hold**: the Weapon Hold switch, per weapon type hip pose, hip raise on fire, iron sights distance, sights and hip FOV, auto sights FOV distance, and Low Ready pose.
 - **Look & Lean**: view lag, camera lean, resting gun tilt, gun lean, lean response.
 - **Corner Peek**: automatic lean out from cover, angles and hip fire lean.
-- **Gun Handling**: weapon inertia, gun drag, resting gun pose.
+- **Gun Handling**: weapon inertia and barrel lead, the hip fire hold that keeps the barrel tip on the crosshair, gun drag, resting gun pose.
 - **Recoil**: per weapon type climb, automatic rifle climb, power armor recoil, aiming multiplier, spring speeds.
 - **Movement**: bob, side shift and stride sway per pace, footstep impact, breathing, jumping and landing.
 - **Advanced**: pace speeds, walls & corners, direction fixes, keys, troubleshooting toggles.
+
+Every setting, and what to switch off for other camera, sway, recoil or head bob mods, is in `Bodycam - Settings Guide.pdf` in the download.
 
 MCM saves your changes to `Data/MCM/Settings/Bodycam.ini`; the plugin notices within a fraction of a second.
 

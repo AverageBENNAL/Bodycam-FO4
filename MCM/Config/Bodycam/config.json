@@ -5,7 +5,7 @@
   "pluginRequirements": [],
   "content": [
     {
-      "text": "<font size=\"24\"><b>Bodycam</b></font> <font size=\"18\">v1.0.8</font>",
+      "text": "<font size=\"24\"><b>Bodycam</b></font> <font size=\"18\">v1.0.9</font>",
       "type": "text",
       "html": true
     },
@@ -342,7 +342,7 @@
           "id": "bWeaponHold:Main",
           "text": "Weapon Hold",
           "type": "switcher",
-          "help": "<font size=\"15\">Holds the weapon out in front of you like Bodycam while aiming down the sights, so you see more of your arms. The aim is corrected automatically, so the sights still mark the shot. Default off.</font>",
+          "help": "<font size=\"15\">Holds the weapon out in front of you like Bodycam while aiming down the sights, so you see more of your arms. The aim is corrected automatically, so the sights still mark the shot. Default on.</font>",
           "html": true,
           "valueOptions": {
             "sourceType": "ModSettingBool"

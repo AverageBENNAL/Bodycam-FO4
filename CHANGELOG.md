@@ -1,5 +1,50 @@
 # Changelog
 
+## 1.0.9 - 2026-10-03
+Hip fire is rebuilt around how Bodycam holds a gun, and settings can now be saved and shared as presets. A settings guide (PDF) is in the download.
+
+Tested on Anniversary Edition. The Next-Gen and Old-Gen builds have the same changes but I have not been able to run them; if presets or the new hip fire misbehave there, tell me which version you are on.
+
+**Hip fire**
+- **New: Barrel Points At Crosshair** (Gun Handling > Turning, default on). In hip fire the gun comes up from the bottom centre of the screen with the tip of the barrel just under the crosshair, and follows the crosshair wherever Free Aim takes it. Before, the gun sat low and to the right and ran parallel to your aim, so the barrel visibly pointed past whatever the crosshair was on. Works with Free Aim on or off. Where shots land does not change. Off in iron sights and the low ready, which place the gun themselves.
+- **New: Tip Below Crosshair** and **Pistol Tip Below Crosshair** (default 2 and 10). How far under the crosshair the barrel tip sits. Pistols have their own because they are short, and at the long-gun setting the whole pistol sat high on screen. 0 puts the tip on the crosshair.
+- **New: Barrel Tilt** (default 18). Tips the barrel up so the back of the gun hangs low, the way Bodycam holds it. 0 looks straight down the top of the gun.
+- **The hold lets go while your off hand is away from the gun** - a reload, a bash, a grenade - and comes back when the hand does. Held in that pose, an arm that left the gun showed its cut end on screen.
+- **The cut ends of the arms stay off screen.** The first-person arms stop at the upper arm, and the game keeps that cut below and behind the camera. Tilted up for the new hold and then rolled and swung on a hard turn, it could come round into the bottom corner. Bodycam now watches where the top of each arm would be drawn and pulls the gun in toward you for a moment when it gets close, so on the hardest turns the gun tucks in instead.
+- **New: Max Turn In** (default 40). A limit on how far the gun is turned to reach that pose.
+- **Changed: with Barrel Points At Crosshair on, Hip Height and Hip Center on the Weapon Hold page no longer move the gun in hip fire.** The new hold decides where the gun sits across and up the screen. Hip Push, Hip Weapon FOV Change and Hip Raise On Fire still work. Turn Barrel Points At Crosshair off to get the old hold back, with those two sliders.
+- **Changed: Low Ready is off by default.** It hid the new hip hold most of the time. Turn it back on on the Weapon Hold page; nothing else about it changed.
+
+**Weapon inertia**
+- **Reworked: the gun swings about the tip of its barrel.** When you turn, the barrel points ahead of the turn and the butt and hands trail behind it, while the tip stays on the crosshair. It used to swing the whole gun against the turn, which fought Free Aim and was switched off whenever Free Aim was on. It now runs with Free Aim on or off, and never moves the crosshair or where shots land. Fades out in iron sights as before.
+- **New: Barrel Lead** (default 1). How far the barrel points ahead of the turn. Negative makes it trail instead; 0 turns it off.
+- **New: Inertia Push** (default 0.6). The gun draws in toward you while it swings and eases back out. It never goes further out than its resting place, so it cannot show the cut end of an arm.
+- **New: Inertia Sway** (default 0). Slides the hands against the turn. Off by default because it works against Barrel Lead.
+- **Removed: Inertia Tilt and Inertia Slide.** Gun Lean does the tilting now.
+- **New defaults:** Inertia 10, Max Inertia 18, Inertia Recovery Speed 10, Inertia Smoothness 0.6.
+- **Fixed: the gun, crosshair and shots could jump for a few frames on a hard turn.** Bodycam stops trusting the barrel when it is more than about 25° off your aim. A big swing could reach that, and for those frames everything snapped to the aim and back.
+- **Fixed: the gun shook on fast sideways turns**, worst at low frame rates. The swing followed the raw mouse speed, which jumps from frame to frame. It is smoothed first now.
+
+**Gun lean**
+- **Changed: the gun leans much further into turns and strafes.** Gun Lean Into Turns 3.1 to 14, Gun Lean From Strafing 4.5 to 12, Max Extra Gun Lean 7 to 30, Max Total Gun Lean 16 to 40, Gun Lean Speed 7 to 10, Gun Lean Smoothness 1 to 0.7. In iron sights the lean into turns is scaled back to about what it was.
+- **Fixed: leaning the gun moved the crosshair and the shots.** The gun leaned about your line of sight, and the hip pose points the barrel some 10° below that, so a lean swung the barrel sideways. It leans about its own barrel now.
+
+**Presets**
+- **New: My Presets** (top of the General page). Every setting can be saved under a name and loaded again. Type a name and press Save Preset; step through what you have with Previous Preset and Next Preset; press Apply Preset to load the one in the box. Sliders update on screen as soon as you apply.
+- **Presets are files you can share.** They are saved as `.ini` files in `Data\F4SE\Bodycam Presets` (your overwrite folder in MO2). Drop someone else's `.ini` in that folder and it shows up in the list. A preset carries every setting except the Enable Bodycam switch, Controller Mode, key bindings and the troubleshooting switches, so it plays the same for whoever loads it.
+- **Changed: Subtle, Default and Intense are presets now.** The Intensity Preset row is gone; pick them with Previous / Next and press Apply. Their values are unchanged apart from the new defaults listed here.
+
+**Recoil**
+- **New: Aim Recovery** (Recoil > Recovery, default on). On, your aim drifts back down after the climb, as before. Off, the climb stays where it put you and you pull it down yourself.
+- **Changed: breathing no longer moves the gun.** Standing still it rocked the sights enough to miss with a pistol. The view still breathes.
+
+**Fixes**
+- **Fixed: the Pip-Boy light pointed off to the side in the low ready**, with the vanilla light and with Pip-Boy Flashlight. The light hangs from the first-person arms, so it swung away with the gun. It stays on your view now.
+- **Fixed: grenades and molotovs thrown with a gun drawn went where the barrel pointed** instead of where the crosshair was.
+
+**MCM**
+- **The General page is now Enable Bodycam, My Presets and Comfort only.** The Free Aim switch, Crosshair Follows Gun, Shots Follow, Hit Marker and Crosshair Offset Scale moved to the Free Aim page. The Weapon Hold switch moved to the Weapon Hold page.
+
 ## 1.0.8 - 2026-09-27
 Thanks to Cyzarl, droname, TommyCreo, Skylarsis, GoldGary, FrostyMosty and Me1Nagano for the reports behind this one.
 

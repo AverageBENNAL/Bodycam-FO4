@@ -220,6 +220,7 @@ namespace Bodycam
 	static NiMatrix43 s_prevRigRot = Identity();
 	static NiPoint3 s_prevPivot{};
 	static bool s_havePrev = false;
+	static NiPoint3 g_handRest{}, g_handPrev{}; // left hand in the gun's frame: at rest, and last frame
 	static NiPoint3 g_leadShiftPrev{}; // last frame's leadShift, which rides in the hold shift
 	static NiPoint3 g_transientShift{}; // last frame's rig shift less the hold pose: bob, inertia, recoil
 
@@ -3236,7 +3237,48 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 			// of impact, so it was off under Free Aim before 1.0.9.
 			// Scaled by the intensity preset like every other amplitude.
 			// Fades out in ADS: at full strength it swung the sights off target on every turn.
-			const float swingAds = 1.0f - g_holdAds;
+			// Off hand away from the gun: a reload, a bash, a grenade. The hip hold below turns the
+			// arms up about the eye, and an arm that leaves the gun in that pose shows its cut end on
+			// screen (reload, 1.0.9 test). Read as how far the left hand has moved in the gun's own
+			// frame, which none of the rig moves here change, from where it rests while the gun is
+			// simply held. A hand that settles somewhere new (another weapon) becomes the new rest.
+			float handBusy = 0.0f;
+			{
+				static float s_busy = 0.0f, s_calm = 0.0f;
+				static bool s_haveRest = false;
+				static int s_restType = -3;
+				NiAVObjectView* gunNode = FindNode(node, "Weapon", 0);
+				NiAVObjectView* hand = FindNode(node, "LArm_Hand", 0);
+				if (gunNode && hand && dt > 1e-4f)
+				{
+					NiPoint3 p = Transposed(ToColumnForm(gunNode->worldTransform.rot)).Mul(hand->worldTransform.pos - gunNode->worldTransform.pos);
+					if (!s_haveRest || s_restType != g_holdType)
+					{
+						// A weapon is first seen partway through its draw, so there is no rest pose to
+						// take yet: count the hand as away until it has held still.
+						g_handPrev = p;
+						g_handRest = p + NiPoint3{ 100.0f, 0.0f, 0.0f };
+						s_busy = 1.0f;
+						s_calm = 0.0f;
+						s_haveRest = true;
+						s_restType = g_holdType;
+					}
+					float speed = Length(p - g_handPrev) / dt;
+					g_handPrev = p;
+					float away = Length(p - g_handRest);
+					s_calm = speed < 4.0f ? s_calm + dt : 0.0f;
+					if (away < 2.5f)
+						g_handRest = g_handRest + (p - g_handRest) * std::min(1.0f, 2.0f * dt);
+					else if (s_calm > 0.6f)
+						g_handRest = p;
+					float target = away > 2.5f ? 1.0f : 0.0f;
+					s_busy += (target - s_busy) * (1.0f - std::exp(-(target > s_busy ? 16.0f : 6.0f) * dt));
+				}
+				else
+					s_busy = 0.0f;
+				handBusy = s_busy;
+			}
+			const float swingAds = (1.0f - g_holdAds) * (1.0f - handBusy);
 			const float kArmShare = 1.0f; // any share at the wrist turns the gun about the hand and moves the tip
 			const float kWristMax = 2.0f * kDegToRad;
 			const float leadYaw   = g_leadYaw   * c.lookInertiaLead * g_amplitude * swingAds * kDegToRad * c.yawSign * g_blend;
@@ -3396,7 +3438,7 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 			{
 				static NiPoint3 s_conv{};  // rotation vector, radians, components along right / fwd / up
 				static NiPoint3 s_slide{}; // game units, same components
-				const float convW = c.hipConverge ? (1.0f - g_holdAds) * (1.0f - g_lowReady) * wg : 0.0f;
+				const float convW = c.hipConverge ? (1.0f - g_holdAds) * (1.0f - g_lowReady) * (1.0f - handBusy) * wg : 0.0f;
 				bool steady = false;
 				if (convW > 0.01f && muzzleNode)
 				{
@@ -3475,6 +3517,53 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 				// Iron Sights Distance. It sat in the full-rig shift below until 1.0.8, which moves the eye
 				// bone too: measured sight-to-eye 25.3 at push 16 and 24.0 at push 30, i.e. it never showed.
 				+ fwd * hold.forward;
+			// Arm guard. The first-person arms are cut off at the upper arm, and the game keeps that cut
+			// below and behind the camera. Tilted up for the hip hold, then swung by the lead and
+			// rolled 30 deg and more by the lean, the cut comes round into view at the bottom corner
+			// (hard turns, draws, strafes - 1.0.9 test video). So watch where the top of each upper
+			// arm would be drawn, and draw the whole rig back toward the body by however much it
+			// takes to keep it outside the picture. Closed on last frame's bones, which already carry
+			// last frame's guard, so only the remainder is added; let go slowly, and only once there
+			// is clear room, so it does not hunt at the edge.
+			{
+				static float s_guard = 0.0f;
+				const float tanH = std::max(g_crossR, 0.8f) * std::max(g_fovK, 1.0f) * 1.12f;
+				const float tanV = tanH * (g_crossT > 0.01f && g_crossR > 0.01f ? g_crossT / g_crossR : 0.5625f);
+				const NiPoint3 vR = Normalized(g_viewRot.Right()), vF = Normalized(g_viewRot.Forward()), vU = Normalized(g_viewRot.Up());
+				float need = -1000.0f;
+				bool found = false;
+				static const char* const kArms[][2] = { { "LArm_UpperArm", "LArm_ForeArm1" }, { "RArm_UpperArm", "RArm_ForeArm1" } };
+				for (const auto& arm : kArms)
+				{
+					NiAVObjectView* top = FindNode(node, arm[0], 0);
+					NiAVObjectView* elbow = FindNode(node, arm[1], 0);
+					if (!top || !elbow)
+						continue;
+					found = true;
+					// the shoulder end and halfway down to the elbow: the cut is somewhere between
+					for (float t : { 0.0f, 0.5f })
+					{
+						NiPoint3 p = top->worldTransform.pos + (elbow->worldTransform.pos - top->worldTransform.pos) * t - pivot;
+						float x = Dot(p, vR), y = Dot(p, vF), z = Dot(p, vU);
+						// how far forward of the picture's edge it is: at depth y it shows once |x| < y tanH and |z| < y tanV
+						need = std::max(need, y - std::max(std::fabs(x) / tanH, std::fabs(z) / tanV) + 2.0f);
+					}
+				}
+				if (found && dt > 1e-4f)
+				{
+					if (need > 0.0f)
+						s_guard += need * std::min(1.0f, 20.0f * dt);
+					else if (need < -4.0f)
+						s_guard -= std::min(s_guard, (-need - 4.0f) * std::min(1.0f, 4.0f * dt));
+					s_guard = std::clamp(s_guard, 0.0f, 40.0f);
+				}
+				else
+					s_guard = 0.0f;
+				convShift = convShift - vF * s_guard;
+				static uint32_t s_guardLog = 0;
+				if (c.debugLog && s_guard > 0.5f && (s_guardLog++ % 60) == 0)
+					CP_LOG("arm guard: back %.1f (edge margin %.1f)", s_guard, need);
+			}
 			lowReadyShift = lowReadyShift + convShift;
 			// The inertia turns the gun about the tip of the barrel, not the eye: the tip stays on
 			// the crosshair and it is the butt and the hands that trail the turn. Turned about the

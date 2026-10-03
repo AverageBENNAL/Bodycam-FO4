@@ -3,7 +3,7 @@ Scriptname BodycamPresets Native Hidden
 ; The MCM preset buttons. Bodycam.dll watches the two counters in MCM/Settings/Bodycam.ini
 ; and does the file work. A counter, not a flag: MCM only writes a setting when its value changes.
 
-; Generated with the MCM files. Begin reads the preset named in the box in Bodycam.dll and says how many values
+; Kept in step with the MCM files. Begin reads the preset named in the box in Bodycam.dll and says how many values
 ; follow; the lines in Load take them in the order of settings.ini.
 float Function Begin() native global
 float Function Value() native global
