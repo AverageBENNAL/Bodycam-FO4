@@ -255,16 +255,14 @@ struct Config
 	float gunRestCantDeg = -2.0f;  // constant resting tilt, hip fire
 	float gunRestCantAdsDeg = -1.0f; // same, aiming down sights
 	float gunRestPitchDeg = -6.0f;   // resting muzzle up (+) / down (-), hip fire only
-	// Weapon inertia from mouse look (1.0.6). The gun swings against the turn and springs back.
-	// Separate from `inertia` below, which is a strafe-driven positional drag and does nothing
-	// when you only turn the view.
-	float lookInertia        = 8.0f; // degrees of swing per rad/s of mouse look
-	float lookInertiaMax     = 6.0f;  // largest swing, degrees. 12 in 1.0.6 took a second to settle
-	                                  // and moved the sights off target while aiming
-	float lookInertiaRate    = 5.0f; // spring frequency: how fast it catches up and settles
-	float lookInertiaCant    = 1.25f; // degrees of cant per degree of swing
-	float lookInertiaSlide   = 1.25f; // game units of slide per degree of swing
-	float lookInertiaDamping = 0.85f; // below 1 it settles past centre; 0.6 overshot enough to fight aiming
+	// Weapon inertia from mouse look. Since 1.0.9 the gun bends at the wrist against the turn and
+	// springs back; the aim never sees it. Separate from `inertia` below, which is a strafe-driven
+	// positional drag and does nothing when you only turn the view.
+	float lookInertia        = 26.0f; // degrees of bend per rad/s of mouse look
+	float lookInertiaMax     = 18.0f; // largest bend, degrees. Past ~10 a rifle starts to leave the support hand
+	float lookInertiaRate    = 2.2f;  // spring frequency: how fast it catches up and settles
+	float lookInertiaDamping = 0.5f;  // below 1 it settles past centre
+	float lookInertiaPush    = 0.6f;  // game units the gun draws in toward the body per degree of bend
 	float inertia        = 0.075f;
 	float inertiaMax     = 8.0f;
 	float inertiaRate    = 15.0f;
@@ -411,7 +409,7 @@ struct Config
 	{
 		if (!tViewLag) lagMaxDeg = 0.0f;
 		if (!tTurnLean) rollTurn = 0.0f;
-		if (!tGunLean) { cantTurn = cantStrafe = 0.0f; gunFollowRoll = 0.0f; lookInertiaCant = 0.0f; gunRestCantDeg = gunRestCantAdsDeg = gunRestPitchDeg = 0.0f; }
+		if (!tGunLean) { cantTurn = cantStrafe = 0.0f; gunFollowRoll = 0.0f; gunRestCantDeg = gunRestCantAdsDeg = gunRestPitchDeg = 0.0f; }
 		if (!tLookInertia) lookInertia = 0.0f;
 		if (!tGunDrag) inertia = 0.0f;
 		if (!tHeadBob) moveMotion = 0.0f;
@@ -602,10 +600,9 @@ struct Config
 		f("GunMotion", "fRestPitchDeg", gunRestPitchDeg);
 		f("GunMotion", "fLookInertia", lookInertia);
 		f("GunMotion", "fLookInertiaMax", lookInertiaMax);
-		f("GunMotion", "fLookInertiaCant", lookInertiaCant);
-		f("GunMotion", "fLookInertiaSlide", lookInertiaSlide);
 		f("GunMotion", "fLookInertiaRate", lookInertiaRate);
 		f("GunMotion", "fLookInertiaDamping", lookInertiaDamping);
+		f("GunMotion", "fLookInertiaPush", lookInertiaPush);
 		f("GunMotion", "fInertia", inertia);
 		f("GunMotion", "fInertiaMax", inertiaMax);
 		f("GunMotion", "fInertiaRate", inertiaRate);

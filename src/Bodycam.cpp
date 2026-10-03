@@ -133,6 +133,7 @@ namespace Bodycam
 	// Distinct from the strafe-driven "Gun Drag" below, which only responds to sideways movement.
 	static float g_swingYaw = 0.0f, g_swingYawVel = 0.0f;
 	static float g_swingPitch = 0.0f, g_swingPitchVel = 0.0f;
+	static float g_push = 0.0f, g_pushVel = 0.0f; // inertia pull toward the body, game units (negative = back)
 	static float g_cantVel = 0.0f;  // gun cant is second-order so left<->right reversals are smooth
 	static float g_floatYaw = 0.0f, g_floatYawVel = 0.0f;
 	static float g_floatPitch = 0.0f, g_floatPitchVel = 0.0f;
@@ -202,6 +203,9 @@ namespace Bodycam
 	static int   g_holdType = -2;          // Config hold type 0..4, -1 none; -2 = not yet read
 	static float g_holdAds = 0.0f, g_holdForward = 0.0f, g_holdDrop = 0.0f, g_lowReady = 0.0f;
 	static float g_lrLeftDeg = 0.0f;  // low ready swing still in the gun, in degrees (shot redirect)
+	// Weapon inertia bends the gun at the wrist; BarrelDir takes it back out so it never moves the aim.
+	static float g_bendYaw = 0.0f, g_bendPitch = 0.0f; // radians, as applied to the Weapon node
+	static NiPoint3 g_bendUp{ 0.0f, 0.0f, 1.0f }, g_bendRight{ 1.0f, 0.0f, 0.0f };
 	static float g_sightDist = 0.0f; // eye to sight node along the view while aimed, 0 = not measured
 	static float g_fovBase = 0.0f, g_fovApplied = 0.0f, g_fovWritten = 0.0f;
 	static bool  g_fovOwned = false;
@@ -474,6 +478,7 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 		g_floatYaw = g_floatYawVel = g_floatPitch = g_floatPitchVel = 0.0f;
 		g_cantVel = 0.0f;
 		g_swingYaw = g_swingYawVel = g_swingPitch = g_swingPitchVel = 0.0f;
+		g_push = g_pushVel = 0.0f;
 		g_tiltSign = 1.0f; g_tiltNext = 0.0f;
 		g_yawRate = g_turnRate = g_roll = g_rollScreen = g_cant = g_strafeNorm = 0.0f;
 		g_inertia = {};
@@ -745,7 +750,11 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 		}
 		if (best <= 0.9f) // no axis within ~25 deg of the aim: not a barrel we can trust
 			return aim;
-		return Normalized(Transposed(g_fovCompRot).Mul(Normalized(cand[axis])));
+		// Undo the wrist bend (yaw then pitch, so pitch comes off first), then the FOV compensation.
+		NiPoint3 v = Normalized(cand[axis]);
+		v = AxisAngle(g_bendRight, -g_bendPitch).Mul(v);
+		v = AxisAngle(g_bendUp, -g_bendYaw).Mul(v);
+		return Normalized(Transposed(g_fovCompRot).Mul(v));
 	}
 
 	// NiCamera::viewFrustum right edge of the world camera (tan of half the horizontal FOV), -1 if unreadable.
@@ -1901,6 +1910,14 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 				float decay = std::exp(-10.0f * dt);
 				g_swingYaw *= decay; g_swingPitch *= decay;
 				g_swingYawVel = g_swingPitchVel = 0.0f;
+			}
+			// Push: while the gun is bent the arms give a little and draw it in toward the body, then
+			// it rocks forward past rest and back before it settles. Driven by the bend itself, so it
+			// follows the same flick. Damping is fixed well under 1 on purpose: that rock is the effect.
+			if (dt > 1e-4f)
+			{
+				float bend = std::sqrt(g_swingYaw * g_swingYaw + g_swingPitch * g_swingPitch);
+				SpringTo(g_push, g_pushVel, -bend * c.lookInertiaPush, c.lookInertiaRate * 1.4f, 0.45f, dt);
 			}
 
 			// Body roll into turns and strafes.
@@ -3134,19 +3151,22 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 			g_inertia.z = Approach(g_inertia.z, dragTarget.z, c.inertiaRate, dt);
 
 			float wg = g_blend;
-			// Weapon inertia. Turning the gun back against the turn cancels Free Aim's own lead, so
-			// under Free Aim it only cants and slides; without it, it does all three.
+			// Weapon inertia bends the gun at the wrist and nothing else: it turns the Weapon node about
+			// its own origin in the right hand (below, with the low ready's gun-only turn), not the arms,
+			// and BarrelDir takes the bend back out, so shots and the crosshair never see it. Swinging
+			// the whole rig instead fought Free Aim's lead and moved the point of impact, so it was off
+			// under Free Aim before 1.0.9.
 			// Scaled by the intensity preset like every other amplitude.
 			// Fades out in ADS: at full strength it swung the sights off target on every turn.
 			const float swingAds = 1.0f - g_holdAds;
-			float swingYaw = g_freeAim ? 0.0f : g_swingYaw * g_amplitude * swingAds;
-			float swingPitch = g_freeAim ? 0.0f : g_swingPitch * g_amplitude * swingAds;
-			// Negated: the swing runs against the turn, but Gun Lean Into Turns leans with it, and
-			// the two cancelled. Tilting the same way as the turn lean lets them stack.
-			float swingCant = -g_swingYaw * c.lookInertiaCant * g_amplitude * swingAds;
-			NiPoint3 swingSlide = (right * (g_swingYaw * c.lookInertiaSlide) + up * (g_swingPitch * c.lookInertiaSlide)) * (g_amplitude * swingAds);
+			const float bendYaw   = g_swingYaw   * g_amplitude * swingAds * kDegToRad * c.yawSign * g_blend;
+			const float bendPitch = g_swingPitch * g_amplitude * swingAds * kDegToRad * c.pitchSign * g_blend;
+			g_bendYaw = bendYaw;
+			g_bendPitch = bendPitch;
+			g_bendUp = up;
+			g_bendRight = right;
 			// Corner: Gun Turn is hip-only. Aimed, it turned the gun off the sight line.
-			float yaw   = (-g_gunPeek * c.gunYawDeg * c.yawSign * (1.0f - g_holdAds) + g_recoil.gunYawDeg + swingYaw) * kDegToRad * wg;
+			float yaw   = (-g_gunPeek * c.gunYawDeg * c.yawSign * (1.0f - g_holdAds) + g_recoil.gunYawDeg) * kDegToRad * wg;
 			float yawHold = 0.0f; // low ready swing, added once the pose is known below
 			// Gun lean = the screen lean (so the weapon tilts with the view) + extra cant on top.
 			g_gunRollDeg = std::clamp(g_viewRollDeg * c.gunFollowRoll + g_cant * c.cantSign * g_amplitude * wg,
@@ -3159,11 +3179,11 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 			float peekW = std::clamp(std::fabs(g_gunPeek), 0.0f, 1.0f);
 			float peekRoll = (g_camPeek * c.camRollDeg * c.rollSign * c.gunFollowRoll + g_gunPeek * c.gunCantDeg * c.cantSign) * wg;
 			g_gunRollDeg += (peekRoll - g_gunRollDeg) * peekW;
-			float cant  = (g_gunRollDeg + g_recoil.gunRollDeg + swingCant * c.cantSign * wg * (1.0f - peekW)) * kDegToRad;
+			float cant  = (g_gunRollDeg + g_recoil.gunRollDeg) * kDegToRad;
 			// Weapon Hold: out along the line of sight (keeps iron sights lined up), low-ready drop along the
 			// view's down axis, and the muzzle dipping - same sign convention as Retract Muzzle Down.
 			HoldPose hold = UpdateWeaponHold(dt, wg, c);
-			float pitch = (-g_retract * c.retractPitchDeg - hold.pitchDeg + g_recoil.gunPitchUpDeg + swingPitch
+			float pitch = (-g_retract * c.retractPitchDeg - hold.pitchDeg + g_recoil.gunPitchUpDeg
 				+ c.gunRestPitchDeg * (1.0f - g_holdAds) * (1.0f - hold.level)) * kDegToRad * c.pitchSign * wg;
 			const float armShare = std::clamp(hold.armShare, 0.0f, 1.0f);
 			yawHold = hold.yawDeg * armShare * kDegToRad * c.yawSign;
@@ -3240,7 +3260,8 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 					hold.yawDeg, localSpace ? "camera-relative" : "world");
 			// Breathing stays out of the gun: standing still it rocked the sights enough to miss with a pistol.
 			NiPoint3 shift = lowReadyShift + ((g_bobOffset - g_breathOffset) * c.gunBobScale
-				+ g_inertia + swingSlide
+				+ g_inertia
+				+ fwd * (g_push * g_amplitude * swingAds)
 				+ right * (g_gunPeek * c.gunPeekDist * (1.0f - g_holdAds))
 				- fwdFlat * (g_retract * c.retractBack + g_recoil.gunBack)
 				- kWorldUp * (g_retract * c.retractDrop + g_landGunDip)) * wg
@@ -3383,8 +3404,14 @@ static NiPoint3   g_breathOffset{};  // the breathing part of g_bobOffset, which
 					NiMatrix43 local = ToColumnForm(gun->localTransform.rot);
 					bool ours = gun == s_gun && std::memcmp(&gun->localTransform.rot, &s_written, sizeof(s_written)) == 0;
 					NiMatrix43 base = ours ? Mul(Transposed(s_applied), local) : local;
-					NiPoint3 axis = Normalized(Transposed(ToColumnForm(gunParent->worldTransform.rot)).Mul(up));
-					NiMatrix43 turn = std::fabs(gunOnlyYaw) > 1e-5f ? AxisAngle(axis, gunOnlyYaw) : Identity();
+					NiMatrix43 parentT = Transposed(ToColumnForm(gunParent->worldTransform.rot));
+					NiPoint3 axis = Normalized(parentT.Mul(up));
+					NiPoint3 axisR = Normalized(parentT.Mul(right));
+					float turnYaw = gunOnlyYaw + bendYaw;
+					NiMatrix43 turn = std::fabs(turnYaw) > 1e-5f ? AxisAngle(axis, turnYaw) : Identity();
+					if (std::fabs(bendPitch) > 1e-5f)
+						turn = Mul(turn, AxisAngle(axisR, bendPitch));
+
 					gun->localTransform.rot = ToGameForm(Mul(turn, base));
 					s_gun = gun;
 					s_written = gun->localTransform.rot;

@@ -2085,11 +2085,11 @@
           "id": "fLookInertia:GunMotion",
           "text": "Inertia",
           "type": "slider",
-          "help": "<font size=\"15\">How far the gun swings against the way you turn. With Free Aim on it only tilts and slides, so it does not fight the lead. Default 8.</font>",
+          "help": "<font size=\"15\">How far the gun bends at the wrist against the way you turn. Only the gun moves, never the arms, and it never moves where shots land or the crosshair. Default 26.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
-            "max": 30,
+            "max": 50,
             "step": 0.5,
             "sourceType": "ModSettingFloat"
           }
@@ -2098,7 +2098,7 @@
           "id": "fLookInertiaMax:GunMotion",
           "text": "Max Inertia",
           "type": "slider",
-          "help": "<font size=\"15\">Largest the inertia swing can get, in degrees, however fast you spin. Default 6.</font>",
+          "help": "<font size=\"15\">Largest the wrist bend can get, in degrees, however fast you spin. Past about 10 a rifle starts to leave the support hand. Default 18.</font>",
           "html": true,
           "valueOptions": {
             "min": 0,
@@ -2108,41 +2108,15 @@
           }
         },
         {
-          "id": "fLookInertiaCant:GunMotion",
-          "text": "Inertia Tilt",
-          "type": "slider",
-          "help": "<font size=\"15\">How much the gun tilts with the swing, the same way as Gun Lean Into Turns. Negative flips it, 0 = no tilt. Default 1.25.</font>",
-          "html": true,
-          "valueOptions": {
-            "min": -2,
-            "max": 2,
-            "step": 0.05,
-            "sourceType": "ModSettingFloat"
-          }
-        },
-        {
-          "id": "fLookInertiaSlide:GunMotion",
-          "text": "Inertia Slide",
-          "type": "slider",
-          "help": "<font size=\"15\">How far the gun slides sideways and down with the swing. 0 = no slide. Default 1.25.</font>",
-          "html": true,
-          "valueOptions": {
-            "min": 0,
-            "max": 2,
-            "step": 0.05,
-            "sourceType": "ModSettingFloat"
-          }
-        },
-        {
           "id": "fLookInertiaRate:GunMotion",
           "text": "Inertia Recovery Speed",
           "type": "slider",
-          "help": "<font size=\"15\">How quickly the gun catches back up once you stop turning. Lower is heavier and lazier. Default 5.</font>",
+          "help": "<font size=\"15\">How quickly the gun swings back once you stop turning. Lower is looser and lazier. Default 2.2.</font>",
           "html": true,
           "valueOptions": {
-            "min": 1,
+            "min": 0.5,
             "max": 25,
-            "step": 0.5,
+            "step": 0.1,
             "sourceType": "ModSettingFloat"
           }
         },
@@ -2150,11 +2124,24 @@
           "id": "fLookInertiaDamping:GunMotion",
           "text": "Inertia Smoothness",
           "type": "slider",
-          "help": "<font size=\"15\">Below 1 the gun settles slightly past centre before coming to rest, which reads as organic rather than sprung. 1 = no overshoot. Default 0.85.</font>",
+          "help": "<font size=\"15\">Below 1 the gun wobbles past centre before coming to rest; lower is bendier. 1 = no overshoot. Default 0.5.</font>",
           "html": true,
           "valueOptions": {
-            "min": 0.3,
+            "min": 0.2,
             "max": 1.2,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "id": "fLookInertiaPush:GunMotion",
+          "text": "Inertia Push",
+          "type": "slider",
+          "help": "<font size=\"15\">How far the gun draws in toward you while it is bent, then rocks forward and back as it settles. Moves the gun, never the aim. Default 0.6.</font>",
+          "html": true,
+          "valueOptions": {
+            "min": 0,
+            "max": 2,
             "step": 0.05,
             "sourceType": "ModSettingFloat"
           }

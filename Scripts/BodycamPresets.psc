@@ -41,7 +41,7 @@ Function Load() global
 		; an earlier press is still being applied
 		Return
 	EndIf
-	If count != 264
+	If count != 263
 		; natives missing or no such preset: let the plugin write the file
 		Bump("iLoadTick:Presets")
 		Return
@@ -260,10 +260,9 @@ Function Load() global
 	MCM.SetModSettingFloat("Bodycam", "fCantDamping:GunMotion", Value())
 	MCM.SetModSettingFloat("Bodycam", "fLookInertia:GunMotion", Value())
 	MCM.SetModSettingFloat("Bodycam", "fLookInertiaMax:GunMotion", Value())
-	MCM.SetModSettingFloat("Bodycam", "fLookInertiaCant:GunMotion", Value())
-	MCM.SetModSettingFloat("Bodycam", "fLookInertiaSlide:GunMotion", Value())
 	MCM.SetModSettingFloat("Bodycam", "fLookInertiaRate:GunMotion", Value())
 	MCM.SetModSettingFloat("Bodycam", "fLookInertiaDamping:GunMotion", Value())
+	MCM.SetModSettingFloat("Bodycam", "fLookInertiaPush:GunMotion", Value())
 	MCM.SetModSettingFloat("Bodycam", "fInertia:GunMotion", Value())
 	MCM.SetModSettingFloat("Bodycam", "fInertiaMax:GunMotion", Value())
 	MCM.SetModSettingFloat("Bodycam", "fInertiaRate:GunMotion", Value())
